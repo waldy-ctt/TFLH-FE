@@ -184,8 +184,13 @@ function App() {
     await api.updateConversationName(currentConv.id, newName.trim(), user.id);
     setEditingName(false);
     setNewName("");
+
+    // Refresh for all users
     if (user) loadConversations(user.id);
-    selectConversation({ ...currentConv, name: newName.trim() });
+
+    // Update current conversation
+    const updatedConv = { ...currentConv, name: newName.trim() };
+    setCurrentConv(updatedConv);
   };
 
   const initiateKick = async (member: Member) => {
@@ -243,6 +248,14 @@ function App() {
       return () => clearInterval(interval);
     }
   }, [currentConv, user]);
+
+  // Refresh conversation list periodically
+  useEffect(() => {
+    if (user) {
+      const interval = setInterval(() => loadConversations(user.id), 5000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -414,9 +427,20 @@ function App() {
               <div className="max-w-4xl mx-auto">
                 {messages.map((msg) => (
                   <div key={msg.id} className="mb-4">
-                    {msg.reply_to_id && (
-                      <div className="ml-12 mb-1 text-xs text-gray-500 italic">
-                        Replying to message
+                    {/* Reply Context */}
+                    {msg.reply_to && (
+                      <div
+                        className={`mb-2 ml-12 text-xs p-2 rounded bg-gray-200 border-l-2 border-gray-400 ${
+                          msg.user_id === user.id ? "mr-auto" : ""
+                        }`}
+                        style={{ maxWidth: "300px" }}
+                      >
+                        <div className="font-semibold text-gray-700">
+                          Replying to {msg.reply_to.username}:
+                        </div>
+                        <div className="text-gray-600 truncate">
+                          {msg.reply_to.content}
+                        </div>
                       </div>
                     )}
                     <div
