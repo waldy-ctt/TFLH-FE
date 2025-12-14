@@ -61,11 +61,11 @@ export const api = {
     return res.json();
   },
 
-  addMember: async (convId: number, userId: number) => {
+  addMember: async (convId: number, userId: number, addedById: number) => {
     const res = await fetch(`${API}/conversations/${convId}/members`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: userId }),
+      body: JSON.stringify({ user_id: userId, added_by_id: addedById }),
     });
     return res.json();
   },

@@ -27,7 +27,7 @@ export interface Reaction {
 export interface Message {
   id: number;
   username: string;
-  user_id: number;
+  user_id: number | null;
   content: string;
   created_at: string;
   reply_to_id?: number;
@@ -37,6 +37,7 @@ export interface Message {
     username: string;
   };
   reactions: Reaction[];
+  is_system?: boolean;
 }
 
 export interface KickVote {
