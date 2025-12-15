@@ -3,12 +3,20 @@ import { api } from "@/services/api";
 import { Conversation } from "@/types";
 
 export function useConversations() {
-  const { user, setConversations, setCurrentConv, setShowSidebar, isMobile } = useAppContext();
+  const { user, currentConv, setConversations, setCurrentConv, setShowSidebar, isMobile } = useAppContext();
 
   const loadConversations = async () => {
     if (!user) return;
     const data = await api.getConversations(user.id);
     setConversations(data);
+    
+    // Update currentConv if it exists in the new data
+    if (currentConv) {
+      const updatedConv = data.find((c: Conversation) => c.id === currentConv.id);
+      if (updatedConv) {
+        setCurrentConv(updatedConv);
+      }
+    }
   };
 
   const createConversation = async (name: string, memberIds: number[]) => {

@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { useAppContext } from "@/contexts/AppContext";
 import { api } from "@/services/api";
 
@@ -12,31 +11,26 @@ export function useMessages() {
 
   const sendMessage = async (content: string, replyToId?: number) => {
     if (!user || !currentConv) return;
-    await api.sendMessage(currentConv.id, user.id, content, replyToId);
-    await loadMessages(currentConv.id);
+    const result = await api.sendMessage(currentConv.id, user.id, content, replyToId);
+    // Add the message immediately for the sender
+    if (result && !result.error) {
+      setMessages((prevMessages) => [...prevMessages, result]);
+    }
   };
 
   const deleteMessage = async (msgId: number) => {
     if (!user || !currentConv) return;
     await api.deleteMessage(msgId, user.id);
-    await loadMessages(currentConv.id);
+    // No need to reload - WebSocket will handle it
   };
 
   const reactToMessage = async (msgId: number, emoji: string) => {
     if (!user || !currentConv) return;
     await api.reactToMessage(msgId, user.id, emoji);
-    await loadMessages(currentConv.id);
+    // No need to reload - WebSocket will handle it
   };
 
-  // Auto-refresh messages
-  useEffect(() => {
-    if (currentConv && user) {
-      const interval = setInterval(() => {
-        loadMessages(currentConv.id);
-      }, 2000);
-      return () => clearInterval(interval);
-    }
-  }, [currentConv, user]);
+  // No more polling - WebSocket handles real-time updates
 
   return {
     messages,
