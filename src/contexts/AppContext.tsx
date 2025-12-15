@@ -29,11 +29,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [showSidebar, setShowSidebar] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
 
-  // CRITICAL: Log every state change
-  useEffect(() => {
-    console.log('AppContext: currentConv state changed to', currentConv?.id, currentConv?.name);
-  }, [currentConv]);
-
   // Load user from storage on mount
   useEffect(() => {
     const savedUser = authStorage.getUser();
@@ -54,17 +49,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // CRITICAL: Wrap setCurrentConv to ensure state is actually set
+  // Wrap setCurrentConv to ensure proper state updates
   const setCurrentConvSafe = (conv: Conversation | null) => {
-    console.log('AppContext: setCurrentConvSafe called with', conv?.id, conv?.name);
-    setCurrentConv(conv);
+    console.log('AppContext: Setting conversation to', conv?.id, conv?.name);
     
-    // Force re-render by also updating a timestamp
-    if (conv) {
-      // Add timestamp to force React to see this as a new object
-      const convWithTimestamp = { ...conv, _timestamp: Date.now() };
-      setCurrentConv(convWithTimestamp as Conversation);
-    }
+    // Use functional update to ensure latest state
+    setCurrentConv((prevConv) => {
+      // If same conversation, return same reference to prevent re-renders
+      if (prevConv?.id === conv?.id) {
+        console.log('AppContext: Same conversation, skipping update');
+        return prevConv;
+      }
+      
+      console.log('AppContext: Different conversation, updating from', prevConv?.id, 'to', conv?.id);
+      return conv;
+    });
   };
 
   return (

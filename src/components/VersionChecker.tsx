@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-const APP_VERSION = '1.0.3'; // Increment this to force reload on all devices
+const APP_VERSION = '1.0.6'; // CRITICAL FIX - Stopped infinite render loop
 const VERSION_KEY = 'tflh_app_version';
 
 export function VersionChecker() {
@@ -8,10 +8,6 @@ export function VersionChecker() {
     const storedVersion = localStorage.getItem(VERSION_KEY);
     
     if (storedVersion !== APP_VERSION) {
-      console.log('🔄 Version mismatch detected, clearing cache...');
-      console.log('📦 Stored version:', storedVersion);
-      console.log('✨ Current version:', APP_VERSION);
-      
       // Clear all local storage except user auth
       const userAuth = localStorage.getItem('tflh_user');
       localStorage.clear();
@@ -37,7 +33,6 @@ export function VersionChecker() {
       }
       
       // Force hard reload
-      console.log('🔄 Reloading app with fresh cache...');
       setTimeout(() => {
         window.location.reload();
       }, 100);

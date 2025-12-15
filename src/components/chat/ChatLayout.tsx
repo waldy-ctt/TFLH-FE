@@ -15,12 +15,11 @@ export default function ChatLayout() {
   const { loadMessages } = useMessages();
 
   const currentConvRef = useRef(currentConv);
-  const isLoadingRef = useRef<{ [key: number]: boolean }>({});
+  const loadedConvIdRef = useRef<number | null>(null);
 
-  // CRITICAL: Always keep ref in sync with state
+  // Keep ref in sync
   useEffect(() => {
     currentConvRef.current = currentConv;
-    console.log('ChatLayout: currentConv changed to', currentConv?.id, currentConv?.name);
   }, [currentConv]);
 
   useEffect(() => {
@@ -29,54 +28,34 @@ export default function ChatLayout() {
     }
   }, [user, loadConversations]);
 
-  // Load messages and members when conversation changes - ONLY depend on ID
+  // CRITICAL FIX: Only load when conversation ID actually changes
   useEffect(() => {
     const convId = currentConv?.id;
     
-    console.log('ChatLayout: Effect triggered for convId', convId);
-    
     // If no conversation, clear everything
     if (!convId) {
-      setMessages([]);
-      setMembers([]);
-      return;
-    }
-    
-    // Check if already loading this conversation
-    if (isLoadingRef.current[convId]) {
-      console.log('ChatLayout: Already loading conversation', convId);
-      return;
-    }
-    
-    console.log('ChatLayout: Starting to load conversation', convId);
-    isLoadingRef.current[convId] = true;
-    
-    const loadConversationData = async () => {
-      try {
-        // Double check we're still on the same conversation
-        if (currentConvRef.current?.id !== convId) {
-          console.log('ChatLayout: Conversation changed during load, aborting');
-          return;
-        }
-        
-        // Load members and messages in parallel
-        await Promise.all([
-          loadMembers(convId),
-          loadMessages(convId)
-        ]);
-        
-        console.log('ChatLayout: Finished loading conversation', convId);
-      } catch (error) {
-        console.error("Error loading conversation data:", error);
-      } finally {
-        delete isLoadingRef.current[convId];
+      if (loadedConvIdRef.current !== null) {
+        setMessages([]);
+        setMembers([]);
+        loadedConvIdRef.current = null;
       }
-    };
+      return;
+    }
     
-    loadConversationData();
-  }, [currentConv?.id, loadMembers, loadMessages, setMessages, setMembers]);
+    // CRITICAL: Skip if we already loaded this conversation
+    if (loadedConvIdRef.current === convId) {
+      return;
+    }
+    
+    // Mark as loaded BEFORE loading to prevent duplicate calls
+    loadedConvIdRef.current = convId;
+    
+    // Load data
+    loadMembers(convId);
+    loadMessages(convId);
+  }, [currentConv?.id]); // ONLY depend on ID, not the whole object
 
-  // WebSocket handlers - use useCallback to keep them stable
+  // WebSocket handlers
   const handleMemberAdded = useCallback((data: any) => {
     const currentId = currentConvRef.current?.id;
     if (currentId === data.conversationId) {
@@ -99,6 +78,7 @@ export default function ChatLayout() {
 
   const handleMemberKicked = useCallback((data: any) => {
     if (data.userId === user?.id) {
+      loadedConvIdRef.current = null; // Reset on kick
       setCurrentConv(null);
       setShowSidebar(true);
       alert("You have been removed from the conversation");
@@ -114,6 +94,7 @@ export default function ChatLayout() {
   const handleConversationDeleted = useCallback((data: any) => {
     const currentId = currentConvRef.current?.id;
     if (currentId === data.conversationId) {
+      loadedConvIdRef.current = null; // Reset on delete
       setCurrentConv(null);
       setShowSidebar(true);
       alert("This conversation has been deleted");
@@ -123,7 +104,6 @@ export default function ChatLayout() {
 
   const handleNewMessage = useCallback((data: any) => {
     const currentId = currentConvRef.current?.id;
-    console.log('ChatLayout: New message for conversation', data.conversationId, 'current is', currentId);
     if (currentId === data.conversationId) {
       setMessages((prevMessages: any[]) => {
         const isDuplicate = prevMessages.some(m => m.id === data.message.id);

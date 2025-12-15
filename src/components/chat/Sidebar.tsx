@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useAppContext } from "@/contexts/AppContext";
 import { useConversations } from "@/hooks/useConversations";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,40 +11,20 @@ export default function Sidebar() {
   const { selectConversation } = useConversations();
   const { logout } = useAuth();
   const [showNewConv, setShowNewConv] = useState(false);
-  const lastClickTimeRef = useRef(0);
-  const lastClickedIdRef = useRef<number | null>(null);
 
   const handleConversationClick = useCallback((conv: any) => {
-    const now = Date.now();
-    
-    // Debounce clicks - prevent multiple rapid clicks
-    if (now - lastClickTimeRef.current < 500) {
-      console.log('Sidebar: Click too fast, ignoring');
-      return;
-    }
-    
-    // Prevent clicking the same conversation multiple times
-    if (lastClickedIdRef.current === conv.id && now - lastClickTimeRef.current < 2000) {
-      console.log('Sidebar: Same conversation clicked too soon, ignoring');
-      return;
-    }
-    
-    console.log('Sidebar: User clicked conversation', conv.id, conv.name);
-    
-    lastClickTimeRef.current = now;
-    lastClickedIdRef.current = conv.id;
+    console.log('=== CONVERSATION CLICKED ===');
+    console.log('Clicked conversation:', conv.id, conv.name);
+    console.log('Current conversation:', currentConv?.id);
     
     selectConversation(conv);
-  }, [selectConversation]);
+  }, [selectConversation, currentConv?.id]);
 
   const handleBackdropClick = useCallback(() => {
     if (isMobile) {
       setShowSidebar(false);
     }
   }, [isMobile, setShowSidebar]);
-
-  // CRITICAL: Get current conversation ID for comparison
-  const currentConvId = currentConv?.id;
 
   // Don't render sidebar at all when hidden on mobile
   if (isMobile && !showSidebar) {
@@ -96,8 +76,10 @@ export default function Sidebar() {
             </div>
           ) : (
             conversations.map((conv) => {
-              // CRITICAL: Compare by ID only, not object reference
-              const isActive = currentConvId === conv.id;
+              // CRITICAL: Direct comparison, no caching
+              const isActive = currentConv !== null && currentConv.id === conv.id;
+              
+              console.log(`Conversation ${conv.id}: isActive=${isActive}, currentConv?.id=${currentConv?.id}`);
               
               return (
                 <button

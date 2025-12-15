@@ -1,13 +1,15 @@
 import { useAppContext } from "@/contexts/AppContext";
 import { api } from "@/services/api";
+import { useCallback } from "react";
 
 export function useMembers() {
   const { currentConv, setMembers } = useAppContext();
 
-  const loadMembers = async (convId: number) => {
+  // CRITICAL: Stable function that doesn't cause re-renders
+  const loadMembers = useCallback(async (convId: number) => {
     const data = await api.getMembers(convId);
     setMembers(data);
-  };
+  }, [setMembers]); // ONLY depend on setMembers
 
   const addMember = async (userId: number) => {
     if (!currentConv) return;
@@ -17,14 +19,8 @@ export function useMembers() {
     }
   };
 
-  const leaveConversation = async () => {
-    if (!currentConv) return;
-    // Will be implemented in component
-  };
-
   return {
     loadMembers,
     addMember,
-    leaveConversation,
   };
 }

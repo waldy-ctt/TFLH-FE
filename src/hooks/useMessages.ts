@@ -1,30 +1,21 @@
 import { useAppContext } from "@/contexts/AppContext";
 import { api } from "@/services/api";
 import { Message } from "@/types";
-import { useCallback, useRef } from "react";
+import { useCallback } from "react";
 
 export function useMessages() {
-  const { user, currentConv, messages, setMessages } = useAppContext();
-  const loadingConvId = useRef<number | null>(null);
+  const { user, currentConv, setMessages } = useAppContext();
 
+  // CRITICAL: Don't use messages in dependency, causes infinite loop
   const loadMessages = useCallback(async (convId: number) => {
-    // Always reload - don't skip based on previous loads
-    loadingConvId.current = convId;
-    
     try {
       const data = await api.getMessages(convId);
-      
-      // Only set messages if we're still viewing this conversation
-      if (loadingConvId.current === convId) {
-        setMessages(data || []);
-      }
+      setMessages(data || []);
     } catch (error: any) {
       console.error("Failed to load messages:", error);
-      if (loadingConvId.current === convId) {
-        setMessages([]);
-      }
+      setMessages([]);
     }
-  }, [setMessages]);
+  }, [setMessages]); // ONLY depend on setMessages
 
   const sendMessage = async (content: string, replyToId?: number) => {
     if (!user || !currentConv) return;
@@ -45,7 +36,6 @@ export function useMessages() {
   };
 
   return {
-    messages,
     loadMessages,
     sendMessage,
     deleteMessage,

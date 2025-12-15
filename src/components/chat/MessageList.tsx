@@ -9,25 +9,19 @@ export default function MessageList() {
   const lastConvId = useRef<number | null>(null);
   const lastScrollHeight = useRef(0);
 
-  // Log for debugging
-  useEffect(() => {
-    console.log('MessageList: Rendering');
-    console.log('  - currentConv.id:', currentConv?.id);
-    console.log('  - currentConv.name:', currentConv?.name);
-    console.log('  - messages.length:', messages.length);
-    console.log('  - First message conv_id:', messages[0]?.conversation_id);
-  }, [currentConv?.id, currentConv?.name, messages.length, messages]);
-
   // Scroll to bottom when conversation changes or new messages arrive
   useEffect(() => {
     const convChanged = currentConv?.id !== lastConvId.current;
     
     if (convChanged) {
-      console.log('MessageList: Conversation changed from', lastConvId.current, 'to', currentConv?.id);
+      console.log('MessageList: Conversation changed to', currentConv?.id);
       lastConvId.current = currentConv?.id || null;
+      
+      // Reset scroll tracking on conversation change
+      lastScrollHeight.current = 0;
     }
     
-    // Always scroll to bottom for new conversation or new messages
+    // Scroll to bottom for new conversation or new messages
     if (messageEndRef.current && scrollContainerRef.current) {
       const container = scrollContainerRef.current;
       const shouldScroll = convChanged || 
@@ -37,19 +31,25 @@ export default function MessageList() {
       if (shouldScroll) {
         setTimeout(() => {
           if (messageEndRef.current) {
-            messageEndRef.current.scrollIntoView({ behavior: convChanged ? "auto" : "smooth", block: "end" });
+            messageEndRef.current.scrollIntoView({ 
+              behavior: convChanged ? "auto" : "smooth", 
+              block: "end" 
+            });
           }
-        }, 50);
+        }, convChanged ? 0 : 50);
       }
       
       lastScrollHeight.current = container.scrollHeight;
     }
   }, [currentConv?.id, messages.length]);
 
-  // Don't show anything if no conversation selected
+  // Don't render if no conversation
   if (!currentConv) {
     return null;
   }
+
+  // Filter messages to only show ones from current conversation
+  const currentMessages = messages.filter(msg => msg.conversation_id === currentConv.id);
 
   return (
     <div 
@@ -63,10 +63,7 @@ export default function MessageList() {
       }}
     >
       <div className="max-w-4xl mx-auto space-y-4 pb-2">
-        <div className="text-xs text-gray-400 text-center mb-4">
-          Viewing: {currentConv.name} (ID: {currentConv.id})
-        </div>
-        {messages.length === 0 ? (
+        {currentMessages.length === 0 ? (
           <div className="flex items-center justify-center h-full min-h-[200px]">
             <div className="text-center text-gray-400">
               <div className="text-4xl mb-2">💬</div>
@@ -75,9 +72,9 @@ export default function MessageList() {
             </div>
           </div>
         ) : (
-          messages.map((msg) => (
+          currentMessages.map((msg) => (
             <MessageItem 
-              key={`${currentConv.id}-${msg.id}`} 
+              key={msg.id} 
               message={msg} 
               index={msg.id} 
             />

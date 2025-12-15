@@ -13,11 +13,6 @@ export default function ChatHeader() {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Log for debugging
-  useEffect(() => {
-    console.log('ChatHeader: currentConv =', currentConv?.id, currentConv?.name);
-  }, [currentConv?.id, currentConv?.name]);
-
   // Memoize conversation data to prevent flickering
   const displayData = useMemo(() => {
     if (!currentConv) return null;
@@ -49,12 +44,17 @@ export default function ChatHeader() {
   }, [showMobileMenu]);
 
   const handleBackClick = () => {
-    console.log('ChatHeader: Back button clicked - clearing conversation');
+    console.log('ChatHeader: Back clicked - clearing conversation');
     
-    // CRITICAL: Clear everything immediately
+    // CRITICAL: Clear in the correct order
+    // First clear the data
     setMessages([]);
     setMembers([]);
+    
+    // Then clear the conversation (this will trigger MessageList unmount)
     setCurrentConv(null);
+    
+    // Finally show sidebar
     setShowSidebar(true);
   };
 
