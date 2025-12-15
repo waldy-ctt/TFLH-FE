@@ -11,9 +11,12 @@ export default function MessageList() {
 
   // Log for debugging
   useEffect(() => {
-    console.log('MessageList: currentConv =', currentConv?.id, currentConv?.name);
-    console.log('MessageList: messages count =', messages.length);
-  }, [currentConv?.id, messages.length]);
+    console.log('MessageList: Rendering');
+    console.log('  - currentConv.id:', currentConv?.id);
+    console.log('  - currentConv.name:', currentConv?.name);
+    console.log('  - messages.length:', messages.length);
+    console.log('  - First message conv_id:', messages[0]?.conversation_id);
+  }, [currentConv?.id, currentConv?.name, messages.length, messages]);
 
   // Scroll to bottom when conversation changes or new messages arrive
   useEffect(() => {
@@ -60,6 +63,9 @@ export default function MessageList() {
       }}
     >
       <div className="max-w-4xl mx-auto space-y-4 pb-2">
+        <div className="text-xs text-gray-400 text-center mb-4">
+          Viewing: {currentConv.name} (ID: {currentConv.id})
+        </div>
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full min-h-[200px]">
             <div className="text-center text-gray-400">

@@ -15,12 +15,12 @@ export default function ChatLayout() {
   const { loadMessages } = useMessages();
 
   const currentConvRef = useRef(currentConv);
-  const isLoadingRef = useRef(false);
-  const loadedConvIdRef = useRef<number | null>(null);
+  const isLoadingRef = useRef<{ [key: number]: boolean }>({});
 
   // CRITICAL: Always keep ref in sync with state
   useEffect(() => {
     currentConvRef.current = currentConv;
+    console.log('ChatLayout: currentConv changed to', currentConv?.id, currentConv?.name);
   }, [currentConv]);
 
   useEffect(() => {
@@ -29,34 +29,33 @@ export default function ChatLayout() {
     }
   }, [user, loadConversations]);
 
-  // Load messages and members when conversation changes
+  // Load messages and members when conversation changes - ONLY depend on ID
   useEffect(() => {
     const convId = currentConv?.id;
     
-    // Clear loaded ID when conversation changes
-    if (convId !== loadedConvIdRef.current) {
-      loadedConvIdRef.current = null;
-    }
+    console.log('ChatLayout: Effect triggered for convId', convId);
     
     // If no conversation, clear everything
     if (!convId) {
       setMessages([]);
       setMembers([]);
-      loadedConvIdRef.current = null;
       return;
     }
     
-    // Skip if already loading or already loaded this exact conversation
-    if (isLoadingRef.current) {
+    // Check if already loading this conversation
+    if (isLoadingRef.current[convId]) {
+      console.log('ChatLayout: Already loading conversation', convId);
       return;
     }
     
-    isLoadingRef.current = true;
+    console.log('ChatLayout: Starting to load conversation', convId);
+    isLoadingRef.current[convId] = true;
     
     const loadConversationData = async () => {
       try {
         // Double check we're still on the same conversation
         if (currentConvRef.current?.id !== convId) {
+          console.log('ChatLayout: Conversation changed during load, aborting');
           return;
         }
         
@@ -66,11 +65,11 @@ export default function ChatLayout() {
           loadMessages(convId)
         ]);
         
-        loadedConvIdRef.current = convId;
+        console.log('ChatLayout: Finished loading conversation', convId);
       } catch (error) {
         console.error("Error loading conversation data:", error);
       } finally {
-        isLoadingRef.current = false;
+        delete isLoadingRef.current[convId];
       }
     };
     
@@ -79,7 +78,6 @@ export default function ChatLayout() {
 
   // WebSocket handlers - use useCallback to keep them stable
   const handleMemberAdded = useCallback((data: any) => {
-    // CRITICAL: Use ref to get current value
     const currentId = currentConvRef.current?.id;
     if (currentId === data.conversationId) {
       loadMembers(data.conversationId);
@@ -124,8 +122,8 @@ export default function ChatLayout() {
   }, [setCurrentConv, setShowSidebar, loadConversations]);
 
   const handleNewMessage = useCallback((data: any) => {
-    // CRITICAL: Always use fresh ref value
     const currentId = currentConvRef.current?.id;
+    console.log('ChatLayout: New message for conversation', data.conversationId, 'current is', currentId);
     if (currentId === data.conversationId) {
       setMessages((prevMessages: any[]) => {
         const isDuplicate = prevMessages.some(m => m.id === data.message.id);
@@ -167,7 +165,6 @@ export default function ChatLayout() {
 
     wsService.connect(user.id);
 
-    // Subscribe to events
     wsService.on("conversation_created", handleConversationCreated);
     wsService.on("member_added", handleMemberAdded);
     wsService.on("joined_conversation", handleJoinedConversation);

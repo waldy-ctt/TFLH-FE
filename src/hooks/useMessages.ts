@@ -6,14 +6,9 @@ import { useCallback, useRef } from "react";
 export function useMessages() {
   const { user, currentConv, messages, setMessages } = useAppContext();
   const loadingConvId = useRef<number | null>(null);
-  const lastLoadedConvId = useRef<number | null>(null);
 
   const loadMessages = useCallback(async (convId: number) => {
-    // Skip if already loaded this conversation
-    if (lastLoadedConvId.current === convId && messages.length > 0) {
-      return;
-    }
-    
+    // Always reload - don't skip based on previous loads
     loadingConvId.current = convId;
     
     try {
@@ -22,17 +17,14 @@ export function useMessages() {
       // Only set messages if we're still viewing this conversation
       if (loadingConvId.current === convId) {
         setMessages(data || []);
-        lastLoadedConvId.current = convId;
       }
     } catch (error: any) {
       console.error("Failed to load messages:", error);
-      // Set empty array on error
       if (loadingConvId.current === convId) {
         setMessages([]);
-        lastLoadedConvId.current = null;
       }
     }
-  }, [setMessages, messages.length]);
+  }, [setMessages]);
 
   const sendMessage = async (content: string, replyToId?: number) => {
     if (!user || !currentConv) return;

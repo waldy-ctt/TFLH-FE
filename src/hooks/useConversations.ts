@@ -6,7 +6,8 @@ import { useRef, useCallback } from "react";
 export function useConversations() {
   const { user, currentConv, setConversations, setCurrentConv, setShowSidebar, setMessages, setMembers, isMobile } = useAppContext();
   const isSelectingRef = useRef(false);
-  const pendingSelectionRef = useRef<number | null>(null);
+  const selectionLockTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSelectedIdRef = useRef<number | null>(null);
 
   const loadConversations = useCallback(async () => {
     if (!user) return;
@@ -22,42 +23,67 @@ export function useConversations() {
   }, [user, loadConversations]);
 
   const selectConversation = useCallback((conv: Conversation) => {
+    console.log('=== selectConversation START ===');
+    console.log('Requested conversation:', conv.id, conv.name);
+    console.log('Current conversation:', currentConv?.id, currentConv?.name);
+    console.log('Selection lock:', isSelectingRef.current);
+    console.log('Last selected ID:', lastSelectedIdRef.current);
+    
     // Prevent multiple simultaneous selections
     if (isSelectingRef.current) {
-      console.log('Selection in progress, ignoring click');
+      console.log('BLOCKED: Selection in progress');
+      console.log('=== selectConversation END (blocked) ===');
       return;
     }
 
-    // If selecting the same conversation, just hide sidebar on mobile
-    if (currentConv?.id === conv.id) {
+    // Check if this is actually a different conversation
+    const isDifferentConversation = currentConv?.id !== conv.id;
+    
+    console.log('Is different conversation?', isDifferentConversation);
+    
+    if (!isDifferentConversation) {
+      console.log('Same conversation, just hiding sidebar');
       if (isMobile) {
         setShowSidebar(false);
       }
+      console.log('=== selectConversation END (same conv) ===');
       return;
     }
     
-    console.log('Selecting conversation:', conv.id, conv.name);
+    console.log('PROCEEDING with selection');
     
+    // Set lock FIRST
     isSelectingRef.current = true;
-    pendingSelectionRef.current = conv.id;
+    lastSelectedIdRef.current = conv.id;
     
-    // Clear old data immediately
+    // Clear any existing timeout
+    if (selectionLockTimeoutRef.current) {
+      clearTimeout(selectionLockTimeoutRef.current);
+    }
+    
+    // CRITICAL: Clear everything in the right order
+    console.log('Clearing messages and members...');
     setMessages([]);
     setMembers([]);
     
-    // Set new conversation
-    setCurrentConv(conv);
-    
-    // Hide sidebar on mobile when selecting a conversation
-    if (isMobile) {
-      setShowSidebar(false);
-    }
-    
-    // Reset the lock after state updates complete
+    // Small delay to ensure state clears
     setTimeout(() => {
+      console.log('Setting new conversation:', conv.id, conv.name);
+      setCurrentConv(conv);
+      
+      // Hide sidebar on mobile
+      if (isMobile) {
+        setShowSidebar(false);
+      }
+      
+      console.log('=== selectConversation END (success) ===');
+    }, 50);
+    
+    // Release lock after a delay
+    selectionLockTimeoutRef.current = setTimeout(() => {
       isSelectingRef.current = false;
-      pendingSelectionRef.current = null;
-    }, 200);
+      console.log('Selection lock released');
+    }, 500);
   }, [currentConv?.id, isMobile, setMessages, setMembers, setCurrentConv, setShowSidebar]);
 
   const updateConversationName = useCallback(async (convId: number, name: string) => {

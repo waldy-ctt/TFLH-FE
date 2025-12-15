@@ -19,13 +19,13 @@ export default function Sidebar() {
     
     // Debounce clicks - prevent multiple rapid clicks
     if (now - lastClickTimeRef.current < 500) {
-      console.log('Click too fast, ignoring');
+      console.log('Sidebar: Click too fast, ignoring');
       return;
     }
     
     // Prevent clicking the same conversation multiple times
     if (lastClickedIdRef.current === conv.id && now - lastClickTimeRef.current < 2000) {
-      console.log('Same conversation clicked too soon, ignoring');
+      console.log('Sidebar: Same conversation clicked too soon, ignoring');
       return;
     }
     
@@ -42,6 +42,9 @@ export default function Sidebar() {
       setShowSidebar(false);
     }
   }, [isMobile, setShowSidebar]);
+
+  // CRITICAL: Get current conversation ID for comparison
+  const currentConvId = currentConv?.id;
 
   // Don't render sidebar at all when hidden on mobile
   if (isMobile && !showSidebar) {
@@ -93,7 +96,8 @@ export default function Sidebar() {
             </div>
           ) : (
             conversations.map((conv) => {
-              const isActive = currentConv?.id === conv.id;
+              // CRITICAL: Compare by ID only, not object reference
+              const isActive = currentConvId === conv.id;
               
               return (
                 <button

@@ -7,7 +7,7 @@ import AddMemberModal from "@/components/modals/AddMemberModal";
 import ConversationSettingsModal from "@/components/modals/ConversationSettingsModal";
 
 export default function ChatHeader() {
-  const { currentConv, members, setShowSidebar, setCurrentConv, isMobile } = useAppContext();
+  const { currentConv, members, setShowSidebar, setCurrentConv, setMessages, setMembers, isMobile } = useAppContext();
   const [showAddMember, setShowAddMember] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -49,7 +49,11 @@ export default function ChatHeader() {
   }, [showMobileMenu]);
 
   const handleBackClick = () => {
-    console.log('ChatHeader: Back button clicked');
+    console.log('ChatHeader: Back button clicked - clearing conversation');
+    
+    // CRITICAL: Clear everything immediately
+    setMessages([]);
+    setMembers([]);
     setCurrentConv(null);
     setShowSidebar(true);
   };

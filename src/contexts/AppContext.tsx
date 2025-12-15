@@ -29,6 +29,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [showSidebar, setShowSidebar] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
 
+  // CRITICAL: Log every state change
+  useEffect(() => {
+    console.log('AppContext: currentConv state changed to', currentConv?.id, currentConv?.name);
+  }, [currentConv]);
+
   // Load user from storage on mount
   useEffect(() => {
     const savedUser = authStorage.getUser();
@@ -49,6 +54,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
+  // CRITICAL: Wrap setCurrentConv to ensure state is actually set
+  const setCurrentConvSafe = (conv: Conversation | null) => {
+    console.log('AppContext: setCurrentConvSafe called with', conv?.id, conv?.name);
+    setCurrentConv(conv);
+    
+    // Force re-render by also updating a timestamp
+    if (conv) {
+      // Add timestamp to force React to see this as a new object
+      const convWithTimestamp = { ...conv, _timestamp: Date.now() };
+      setCurrentConv(convWithTimestamp as Conversation);
+    }
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -57,7 +75,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         conversations,
         setConversations,
         currentConv,
-        setCurrentConv,
+        setCurrentConv: setCurrentConvSafe,
         messages,
         setMessages,
         members,
