@@ -9,7 +9,7 @@ import Sidebar from "./Sidebar";
 import ChatArea from "./ChatArea";
 
 export default function ChatLayout() {
-  const { user, currentConv, setCurrentConv, setMessages, isMobile, setShowSidebar } = useAppContext();
+  const { user, currentConv, setCurrentConv, setMessages, setShowSidebar } = useAppContext();
   const { loadConversations } = useConversations();
   const { loadMembers } = useMembers();
   const { loadMessages } = useMessages();
@@ -20,12 +20,7 @@ export default function ChatLayout() {
     currentConvRef.current = currentConv;
   }, [currentConv]);
 
-  // Show sidebar when no conversation is selected on mobile
-  useEffect(() => {
-    if (isMobile && !currentConv) {
-      setShowSidebar(true);
-    }
-  }, [isMobile, currentConv, setShowSidebar]);
+  // Don't auto-manage sidebar - let user control it manually
 
   useEffect(() => {
     if (user) {
@@ -150,10 +145,11 @@ export default function ChatLayout() {
 
   return (
     <div
-      className="h-screen flex flex-col md:flex-row bg-gray-100 overflow-hidden touch-manipulation"
+      className="h-screen w-screen flex flex-col md:flex-row bg-gray-100 fixed inset-0"
       style={{ 
         paddingTop: "env(safe-area-inset-top)",
-        paddingBottom: "env(safe-area-inset-bottom)"
+        paddingBottom: "env(safe-area-inset-bottom)",
+        overflow: "hidden"
       }}
     >
       <Sidebar />

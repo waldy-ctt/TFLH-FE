@@ -20,7 +20,7 @@ export default function MessageInput() {
   };
 
   return (
-    <div className="bg-white border-t p-3 sm:p-4 sticky bottom-0 z-10">
+    <div className="bg-white border-t p-3 sm:p-4 shrink-0">
       {replyTo && (
         <div className="max-w-4xl mx-auto mb-2 p-2 bg-blue-50 border-l-4 border-blue-500 rounded flex justify-between items-center">
           <div className="flex-1 min-w-0">

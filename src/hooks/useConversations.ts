@@ -3,7 +3,7 @@ import { api } from "@/services/api";
 import { Conversation } from "@/types";
 
 export function useConversations() {
-  const { user, currentConv, setConversations, setCurrentConv, setShowSidebar, isMobile } = useAppContext();
+  const { user, currentConv, setConversations, setCurrentConv, setShowSidebar, setMessages, isMobile } = useAppContext();
 
   const loadConversations = async () => {
     if (!user) return;
@@ -27,7 +27,11 @@ export function useConversations() {
   };
 
   const selectConversation = (conv: Conversation) => {
+    // Clear old messages immediately to prevent showing wrong conversation's messages
+    setMessages([]);
+    // Set the new conversation
     setCurrentConv(conv);
+    // Hide sidebar on mobile when selecting a conversation
     if (isMobile) {
       setShowSidebar(false);
     }

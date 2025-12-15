@@ -14,20 +14,31 @@ export default function Sidebar() {
 
   const handleConversationClick = (conv: any) => {
     selectConversation(conv);
-    // Close sidebar on mobile after selection
+  };
+
+  const handleBackdropClick = () => {
     if (isMobile) {
       setShowSidebar(false);
     }
   };
+
+  const handleSidebarClose = () => {
+    if (isMobile) {
+      setShowSidebar(false);
+    }
+  };
+
+  // Don't render sidebar at all when hidden on mobile
+  if (isMobile && !showSidebar) {
+    return null;
+  }
 
   return (
     <>
       <div
         className={`${
           isMobile
-            ? `fixed inset-0 z-50 bg-white transform transition-transform duration-300 ${
-                showSidebar ? "translate-x-0" : "-translate-x-full"
-              }`
+            ? "fixed inset-0 z-50 bg-white"
             : "w-80 border-r bg-white"
         } flex flex-col`}
       >
@@ -39,17 +50,6 @@ export default function Sidebar() {
               <p className="text-sm text-blue-100">Conversations</p>
             </div>
             <div className="flex gap-2 shrink-0">
-              {isMobile && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setShowSidebar(false)}
-                  className="text-white hover:bg-white/20 active:bg-white/30"
-                  type="button"
-                >
-                  <XIcon size={18} />
-                </Button>
-              )}
               <Button
                 variant="ghost"
                 size="icon"
@@ -118,11 +118,11 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Mobile backdrop */}
+      {/* Mobile backdrop - only show when sidebar is visible */}
       {isMobile && showSidebar && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity"
-          onClick={() => setShowSidebar(false)}
+          onClick={handleBackdropClick}
         />
       )}
 

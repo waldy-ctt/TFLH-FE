@@ -42,15 +42,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const checkMobile = () => {
       const mobile = window.innerWidth < 768;
       setIsMobile(mobile);
-      if (mobile && currentConv) {
-        setShowSidebar(false);
-      }
     };
 
     checkMobile();
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
-  }, [currentConv]);
+  }, []);
 
   return (
     <AppContext.Provider

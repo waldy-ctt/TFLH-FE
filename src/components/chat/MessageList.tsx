@@ -10,10 +10,19 @@ export default function MessageList() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isAutoScrolling = useRef(false);
   const lastMessageCount = useRef(0);
+  const lastConvId = useRef<number | null>(null);
 
   useEffect(() => {
     if (currentConv) {
-      loadMessages(currentConv.id);
+      // If conversation changed, reset message count and load new messages
+      if (lastConvId.current !== currentConv.id) {
+        lastConvId.current = currentConv.id;
+        lastMessageCount.current = 0;
+        loadMessages(currentConv.id);
+      }
+    } else {
+      lastConvId.current = null;
+      lastMessageCount.current = 0;
     }
   }, [currentConv, loadMessages]);
 

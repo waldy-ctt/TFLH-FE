@@ -8,7 +8,7 @@ export default function ChatArea() {
 
   if (!currentConv) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-gray-400 p-4 bg-gray-50">
+      <div className="flex-1 flex flex-col items-center justify-center text-gray-400 p-4 bg-gray-50 overflow-hidden">
         <div className="text-center max-w-sm">
           <div className="text-6xl mb-4">💬</div>
           <p className="text-xl font-medium text-gray-600 mb-2">
