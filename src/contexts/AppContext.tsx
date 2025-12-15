@@ -2,6 +2,8 @@ import { createContext, useContext, useState, useEffect, ReactNode, Dispatch, Se
 import { User, Conversation, Member, Message } from "@/types";
 import { authStorage } from "@/utils/auth";
 
+type Screen = 'conversations' | 'chat';
+
 interface AppContextType {
   user: User | null;
   setUser: (user: User | null) => void;
@@ -13,8 +15,12 @@ interface AppContextType {
   setMessages: Dispatch<SetStateAction<Message[]>>; 
   members: Member[];
   setMembers: Dispatch<SetStateAction<Member[]>>;
-  showSidebar: boolean;
-  setShowSidebar: (show: boolean) => void;
+  
+  // NEW: Stack-based navigation
+  currentScreen: Screen;
+  navigateToChat: (conv: Conversation) => void;
+  navigateBack: () => void;
+  
   isMobile: boolean;
 }
 
@@ -26,7 +32,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [currentConv, setCurrentConv] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
-  const [showSidebar, setShowSidebar] = useState(true);
+  const [currentScreen, setCurrentScreen] = useState<Screen>('conversations');
   const [isMobile, setIsMobile] = useState(false);
 
   // Load user from storage on mount
@@ -49,21 +55,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // Wrap setCurrentConv to ensure proper state updates
-  const setCurrentConvSafe = (conv: Conversation | null) => {
-    console.log('AppContext: Setting conversation to', conv?.id, conv?.name);
+  // CRITICAL: Stack-based navigation functions
+  const navigateToChat = (conv: Conversation) => {
+    console.log('📱 Navigate to chat:', conv.id, conv.name);
     
-    // Use functional update to ensure latest state
-    setCurrentConv((prevConv) => {
-      // If same conversation, return same reference to prevent re-renders
-      if (prevConv?.id === conv?.id) {
-        console.log('AppContext: Same conversation, skipping update');
-        return prevConv;
-      }
-      
-      console.log('AppContext: Different conversation, updating from', prevConv?.id, 'to', conv?.id);
-      return conv;
-    });
+    // Set conversation FIRST
+    setCurrentConv(conv);
+    
+    // Clear old data
+    setMessages([]);
+    setMembers([]);
+    
+    // Then navigate
+    setCurrentScreen('chat');
+  };
+
+  const navigateBack = () => {
+    console.log('📱 Navigate back to conversations');
+    
+    // Navigate first
+    setCurrentScreen('conversations');
+    
+    // Then clear (prevents flashing)
+    setTimeout(() => {
+      setCurrentConv(null);
+      setMessages([]);
+      setMembers([]);
+    }, 100);
   };
 
   return (
@@ -74,13 +92,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
         conversations,
         setConversations,
         currentConv,
-        setCurrentConv: setCurrentConvSafe,
+        setCurrentConv,
         messages,
         setMessages,
         members,
         setMembers,
-        showSidebar,
-        setShowSidebar,
+        currentScreen,
+        navigateToChat,
+        navigateBack,
         isMobile,
       }}
     >

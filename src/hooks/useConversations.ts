@@ -1,10 +1,9 @@
 import { useAppContext } from "@/contexts/AppContext";
 import { api } from "@/services/api";
-import { Conversation } from "@/types";
 import { useCallback } from "react";
 
 export function useConversations() {
-  const { user, setConversations, setCurrentConv, setShowSidebar, setMessages, setMembers, isMobile } = useAppContext();
+  const { user, setConversations, navigateToChat } = useAppContext();
 
   const loadConversations = useCallback(async () => {
     if (!user) return;
@@ -19,16 +18,9 @@ export function useConversations() {
     return data;
   }, [user, loadConversations]);
 
-  const selectConversation = useCallback((conv: Conversation) => {
-    // Simple and direct - clear then set
-    setMessages([]);
-    setMembers([]);
-    setCurrentConv(conv);
-    
-    if (isMobile) {
-      setShowSidebar(false);
-    }
-  }, [isMobile, setMessages, setMembers, setCurrentConv, setShowSidebar]);
+  const selectConversation = useCallback((conv: any) => {
+    navigateToChat(conv);
+  }, [navigateToChat]);
 
   const updateConversationName = useCallback(async (convId: number, name: string) => {
     if (!user) return;

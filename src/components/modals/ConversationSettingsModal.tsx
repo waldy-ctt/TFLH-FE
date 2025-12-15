@@ -16,7 +16,7 @@ interface Props {
 }
 
 export default function ConversationSettingsModal({ isOpen, onClose }: Props) {
-  const { user, currentConv, members, setCurrentConv, setShowSidebar, isMobile } = useAppContext();
+  const { user, currentConv, members, setCurrentConv, navigateBack } = useAppContext();
   const { updateConversationName, loadConversations } = useConversations();
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState("");
@@ -37,9 +37,7 @@ export default function ConversationSettingsModal({ isOpen, onClose }: Props) {
     setCurrentConv(null);
     await loadConversations();
     onClose();
-    if (isMobile) {
-      setShowSidebar(true);
-    }
+    navigateBack();
   };
 
   const handleKickClick = (member: Member) => {
@@ -86,7 +84,7 @@ export default function ConversationSettingsModal({ isOpen, onClose }: Props) {
             <p className="text-sm font-medium mb-2">
               Members ({members.length})
             </p>
-            <div className="max-h-32 sm:max-h-40 overflow-y-auto border rounded p-2">
+            <div className="max-h-40 overflow-y-auto border rounded p-2">
               {members.map((m) => (
                 <div
                   key={m.id}
@@ -100,7 +98,7 @@ export default function ConversationSettingsModal({ isOpen, onClose }: Props) {
                       onClick={() => handleKickClick(m)}
                     >
                       <UserMinus size={14} className="mr-1" />
-                      <span className="hidden sm:inline">Kick</span>
+                      Kick
                     </Button>
                   )}
                 </div>

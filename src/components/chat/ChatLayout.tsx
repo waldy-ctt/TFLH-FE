@@ -5,11 +5,11 @@ import { useConversations } from "@/hooks/useConversations";
 import { useMembers } from "@/hooks/useMembers";
 import { useMessages } from "@/hooks/useMessages";
 import { wsService } from "@/services/websocket";
-import Sidebar from "./Sidebar";
-import ChatArea from "./ChatArea";
+import ConversationListScreen from "./ConversationListScreen";
+import ChatScreen from "./ChatScreen";
 
 export default function ChatLayout() {
-  const { user, currentConv, setCurrentConv, setMessages, setShowSidebar, setMembers } = useAppContext();
+  const { user, currentConv, currentScreen, setCurrentConv, setMessages, navigateBack } = useAppContext();
   const { loadConversations } = useConversations();
   const { loadMembers } = useMembers();
   const { loadMessages } = useMessages();
@@ -17,7 +17,6 @@ export default function ChatLayout() {
   const currentConvRef = useRef(currentConv);
   const loadedConvIdRef = useRef<number | null>(null);
 
-  // Keep ref in sync
   useEffect(() => {
     currentConvRef.current = currentConv;
   }, [currentConv]);
@@ -28,32 +27,28 @@ export default function ChatLayout() {
     }
   }, [user, loadConversations]);
 
-  // CRITICAL FIX: Only load when conversation ID actually changes
+  // Load data when entering chat screen
   useEffect(() => {
     const convId = currentConv?.id;
     
-    // If no conversation, clear everything
-    if (!convId) {
+    if (!convId || currentScreen !== 'chat') {
       if (loadedConvIdRef.current !== null) {
-        setMessages([]);
-        setMembers([]);
         loadedConvIdRef.current = null;
       }
       return;
     }
     
-    // CRITICAL: Skip if we already loaded this conversation
     if (loadedConvIdRef.current === convId) {
       return;
     }
     
-    // Mark as loaded BEFORE loading to prevent duplicate calls
     loadedConvIdRef.current = convId;
     
     // Load data
+    console.log('📱 Loading data for conversation:', convId);
     loadMembers(convId);
     loadMessages(convId);
-  }, [currentConv?.id]); // ONLY depend on ID, not the whole object
+  }, [currentConv?.id, currentScreen, loadMembers, loadMessages]);
 
   // WebSocket handlers
   const handleMemberAdded = useCallback((data: any) => {
@@ -78,9 +73,9 @@ export default function ChatLayout() {
 
   const handleMemberKicked = useCallback((data: any) => {
     if (data.userId === user?.id) {
-      loadedConvIdRef.current = null; // Reset on kick
+      loadedConvIdRef.current = null;
       setCurrentConv(null);
-      setShowSidebar(true);
+      navigateBack();
       alert("You have been removed from the conversation");
     } else {
       const currentId = currentConvRef.current?.id;
@@ -89,18 +84,18 @@ export default function ChatLayout() {
       }
     }
     loadConversations();
-  }, [user?.id, setCurrentConv, setShowSidebar, loadMembers, loadConversations]);
+  }, [user?.id, setCurrentConv, navigateBack, loadMembers, loadConversations]);
 
   const handleConversationDeleted = useCallback((data: any) => {
     const currentId = currentConvRef.current?.id;
     if (currentId === data.conversationId) {
-      loadedConvIdRef.current = null; // Reset on delete
+      loadedConvIdRef.current = null;
       setCurrentConv(null);
-      setShowSidebar(true);
+      navigateBack();
       alert("This conversation has been deleted");
     }
     loadConversations();
-  }, [setCurrentConv, setShowSidebar, loadConversations]);
+  }, [setCurrentConv, navigateBack, loadConversations]);
 
   const handleNewMessage = useCallback((data: any) => {
     const currentId = currentConvRef.current?.id;
@@ -185,15 +180,18 @@ export default function ChatLayout() {
 
   return (
     <div
-      className="h-screen w-screen flex flex-col md:flex-row bg-gray-100 fixed inset-0"
+      className="h-screen w-screen bg-gray-100 fixed inset-0"
       style={{ 
         paddingTop: "env(safe-area-inset-top)",
         paddingBottom: "env(safe-area-inset-bottom)",
         overflow: "hidden"
       }}
     >
-      <Sidebar />
-      <ChatArea />
+      {/* Stack-based navigation - only one screen visible at a time */}
+      <div className="relative w-full h-full">
+        {currentScreen === 'conversations' && <ConversationListScreen />}
+        {currentScreen === 'chat' && <ChatScreen />}
+      </div>
     </div>
   );
 }

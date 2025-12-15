@@ -1,4 +1,4 @@
-
+import { useMemo } from "react";
 import { useAppContext } from "@/contexts/AppContext";
 import { api } from "@/services/api";
 import { Modal } from "@/components/ui/modal";
@@ -13,7 +13,11 @@ interface Props {
 }
 
 export default function KickVoteModal({ isOpen, onClose, target }: Props) {
-  const { user, currentConv, members } = useAppContext();
+  const { user, conversations, currentConvId, members } = useAppContext();
+
+  const currentConv = useMemo(() => {
+    return conversations.find(c => c.id === currentConvId);
+  }, [conversations, currentConvId]);
 
   const handleVote = async (vote: boolean) => {
     if (!currentConv || !target || !user) return;

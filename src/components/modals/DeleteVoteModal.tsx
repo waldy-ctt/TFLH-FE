@@ -11,7 +11,7 @@ interface Props {
 }
 
 export default function DeleteVoteModal({ isOpen, onClose }: Props) {
-  const { user, currentConv, members, setCurrentConv, setShowSidebar, isMobile } = useAppContext();
+  const { user, currentConv, members, setCurrentConv, navigateBack } = useAppContext();
   const { loadConversations } = useConversations();
 
   const handleVote = async (vote: boolean) => {
@@ -24,10 +24,8 @@ export default function DeleteVoteModal({ isOpen, onClose }: Props) {
     if (res.deleted) {
       setCurrentConv(null);
       await loadConversations();
+      navigateBack();
       alert("Conversation has been deleted.");
-      if (isMobile) {
-        setShowSidebar(true);
-      }
     } else {
       alert(
         `Vote recorded. All ${members.length} members must agree to delete.`
