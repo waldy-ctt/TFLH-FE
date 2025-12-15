@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useAppContext } from "@/contexts/AppContext";
 import { useConversations } from "@/hooks/useConversations";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { LogOut, Plus, Users, XIcon } from "lucide-react";
+import { LogOut, Plus, Users } from "lucide-react";
 import NewConversationModal from "@/components/modals/NewConversationModal";
 
 export default function Sidebar() {
@@ -11,22 +11,37 @@ export default function Sidebar() {
   const { selectConversation } = useConversations();
   const { logout } = useAuth();
   const [showNewConv, setShowNewConv] = useState(false);
+  const lastClickTimeRef = useRef(0);
+  const lastClickedIdRef = useRef<number | null>(null);
 
-  const handleConversationClick = (conv: any) => {
+  const handleConversationClick = useCallback((conv: any) => {
+    const now = Date.now();
+    
+    // Debounce clicks - prevent multiple rapid clicks
+    if (now - lastClickTimeRef.current < 500) {
+      console.log('Click too fast, ignoring');
+      return;
+    }
+    
+    // Prevent clicking the same conversation multiple times
+    if (lastClickedIdRef.current === conv.id && now - lastClickTimeRef.current < 2000) {
+      console.log('Same conversation clicked too soon, ignoring');
+      return;
+    }
+    
+    console.log('Sidebar: User clicked conversation', conv.id, conv.name);
+    
+    lastClickTimeRef.current = now;
+    lastClickedIdRef.current = conv.id;
+    
     selectConversation(conv);
-  };
+  }, [selectConversation]);
 
-  const handleBackdropClick = () => {
+  const handleBackdropClick = useCallback(() => {
     if (isMobile) {
       setShowSidebar(false);
     }
-  };
-
-  const handleSidebarClose = () => {
-    if (isMobile) {
-      setShowSidebar(false);
-    }
-  };
+  }, [isMobile, setShowSidebar]);
 
   // Don't render sidebar at all when hidden on mobile
   if (isMobile && !showSidebar) {
@@ -77,31 +92,43 @@ export default function Sidebar() {
               <p className="text-xs mt-1">Create one to get started!</p>
             </div>
           ) : (
-            conversations.map((conv) => (
-              <button
-                key={conv.id}
-                onClick={() => handleConversationClick(conv)}
-                className={`w-full p-4 text-left hover:bg-gray-50 active:bg-gray-100 border-b transition-colors ${
-                  currentConv?.id === conv.id
-                    ? "bg-blue-50 border-l-4 border-l-blue-600"
-                    : ""
-                }`}
-                type="button"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-900 truncate text-sm sm:text-base">
-                      {conv.name}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      <Users size={12} className="inline mr-1" />
-                      {conv.member_count} member
-                      {conv.member_count !== 1 ? "s" : ""}
-                    </p>
+            conversations.map((conv) => {
+              const isActive = currentConv?.id === conv.id;
+              
+              return (
+                <button
+                  key={conv.id}
+                  onClick={() => handleConversationClick(conv)}
+                  className={`w-full p-4 text-left hover:bg-gray-50 active:bg-gray-100 border-b transition-colors ${
+                    isActive
+                      ? "bg-blue-50 border-l-4 border-l-blue-600"
+                      : ""
+                  }`}
+                  type="button"
+                  style={{
+                    WebkitTapHighlightColor: 'transparent',
+                  }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <p className={`font-semibold truncate text-sm sm:text-base ${
+                        isActive ? "text-blue-700" : "text-gray-900"
+                      }`}>
+                        {conv.name}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        <Users size={12} className="inline mr-1" />
+                        {conv.member_count} member
+                        {conv.member_count !== 1 ? "s" : ""}
+                      </p>
+                    </div>
+                    {isActive && (
+                      <div className="ml-2 w-2 h-2 bg-blue-600 rounded-full" />
+                    )}
                   </div>
-                </div>
-              </button>
-            ))
+                </button>
+              );
+            })
           )}
         </div>
 
@@ -123,6 +150,9 @@ export default function Sidebar() {
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity"
           onClick={handleBackdropClick}
+          style={{
+            WebkitTapHighlightColor: 'transparent',
+          }}
         />
       )}
 

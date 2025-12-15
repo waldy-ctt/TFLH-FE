@@ -12,7 +12,7 @@ interface AppContextType {
   messages: Message[];
   setMessages: Dispatch<SetStateAction<Message[]>>; 
   members: Member[];
-  setMembers: (members: Member[]) => void;
+  setMembers: Dispatch<SetStateAction<Member[]>>;
   showSidebar: boolean;
   setShowSidebar: (show: boolean) => void;
   isMobile: boolean;

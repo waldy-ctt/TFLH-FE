@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useAppContext } from "@/contexts/AppContext";
 import ChatHeader from "./ChatHeader";
 import MessageList from "./MessageList";
@@ -5,6 +6,11 @@ import MessageInput from "./MessageInput";
 
 export default function ChatArea() {
   const { currentConv, isMobile } = useAppContext();
+
+  // Log for debugging
+  useEffect(() => {
+    console.log('ChatArea: Rendering with conversation =', currentConv?.id, currentConv?.name);
+  }, [currentConv?.id, currentConv?.name]);
 
   if (!currentConv) {
     return (
@@ -26,7 +32,10 @@ export default function ChatArea() {
   }
 
   return (
-    <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-white">
+    <div 
+      key={currentConv.id} 
+      className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-white"
+    >
       <ChatHeader />
       <MessageList />
       <MessageInput />

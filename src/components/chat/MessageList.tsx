@@ -1,52 +1,52 @@
 import { useEffect, useRef } from "react";
 import { useAppContext } from "@/contexts/AppContext";
-import { useMessages } from "@/hooks/useMessages";
 import MessageItem from "./MessageItem";
 
 export default function MessageList() {
-  const { currentConv } = useAppContext();
-  const { messages, loadMessages } = useMessages();
+  const { currentConv, messages } = useAppContext();
   const messageEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const isAutoScrolling = useRef(false);
-  const lastMessageCount = useRef(0);
   const lastConvId = useRef<number | null>(null);
+  const lastScrollHeight = useRef(0);
 
+  // Log for debugging
   useEffect(() => {
-    if (currentConv) {
-      // If conversation changed, reset message count and load new messages
-      if (lastConvId.current !== currentConv.id) {
-        lastConvId.current = currentConv.id;
-        lastMessageCount.current = 0;
-        loadMessages(currentConv.id);
-      }
-    } else {
-      lastConvId.current = null;
-      lastMessageCount.current = 0;
+    console.log('MessageList: currentConv =', currentConv?.id, currentConv?.name);
+    console.log('MessageList: messages count =', messages.length);
+  }, [currentConv?.id, messages.length]);
+
+  // Scroll to bottom when conversation changes or new messages arrive
+  useEffect(() => {
+    const convChanged = currentConv?.id !== lastConvId.current;
+    
+    if (convChanged) {
+      console.log('MessageList: Conversation changed from', lastConvId.current, 'to', currentConv?.id);
+      lastConvId.current = currentConv?.id || null;
     }
-  }, [currentConv, loadMessages]);
-
-  useEffect(() => {
-    // Only auto-scroll when new messages arrive
-    if (messages.length > lastMessageCount.current && messageEndRef.current && !isAutoScrolling.current) {
-      isAutoScrolling.current = true;
-      lastMessageCount.current = messages.length;
+    
+    // Always scroll to bottom for new conversation or new messages
+    if (messageEndRef.current && scrollContainerRef.current) {
+      const container = scrollContainerRef.current;
+      const shouldScroll = convChanged || 
+                          (container.scrollHeight !== lastScrollHeight.current &&
+                           container.scrollTop + container.clientHeight >= lastScrollHeight.current - 100);
       
-      // Use setTimeout for smoother Android scrolling
-      setTimeout(() => {
-        if (messageEndRef.current) {
-          messageEndRef.current.scrollIntoView({ 
-            behavior: "smooth",
-            block: "end"
-          });
-        }
-        
+      if (shouldScroll) {
         setTimeout(() => {
-          isAutoScrolling.current = false;
-        }, 300);
-      }, 100);
+          if (messageEndRef.current) {
+            messageEndRef.current.scrollIntoView({ behavior: convChanged ? "auto" : "smooth", block: "end" });
+          }
+        }, 50);
+      }
+      
+      lastScrollHeight.current = container.scrollHeight;
     }
-  }, [messages]);
+  }, [currentConv?.id, messages.length]);
+
+  // Don't show anything if no conversation selected
+  if (!currentConv) {
+    return null;
+  }
 
   return (
     <div 
@@ -60,9 +60,23 @@ export default function MessageList() {
       }}
     >
       <div className="max-w-4xl mx-auto space-y-4 pb-2">
-        {messages.map((msg, index) => (
-          <MessageItem key={msg.id} message={msg} index={index} />
-        ))}
+        {messages.length === 0 ? (
+          <div className="flex items-center justify-center h-full min-h-[200px]">
+            <div className="text-center text-gray-400">
+              <div className="text-4xl mb-2">💬</div>
+              <p className="text-sm">No messages yet</p>
+              <p className="text-xs mt-1">Start the conversation!</p>
+            </div>
+          </div>
+        ) : (
+          messages.map((msg) => (
+            <MessageItem 
+              key={`${currentConv.id}-${msg.id}`} 
+              message={msg} 
+              index={msg.id} 
+            />
+          ))
+        )}
         <div ref={messageEndRef} className="h-1" />
       </div>
     </div>

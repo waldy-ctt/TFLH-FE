@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { useAppContext } from "@/contexts/AppContext";
 import { useConversations } from "@/hooks/useConversations";
 import { useMembers } from "@/hooks/useMembers";
@@ -9,18 +9,19 @@ import Sidebar from "./Sidebar";
 import ChatArea from "./ChatArea";
 
 export default function ChatLayout() {
-  const { user, currentConv, setCurrentConv, setMessages, setShowSidebar } = useAppContext();
+  const { user, currentConv, setCurrentConv, setMessages, setShowSidebar, setMembers } = useAppContext();
   const { loadConversations } = useConversations();
   const { loadMembers } = useMembers();
   const { loadMessages } = useMessages();
 
   const currentConvRef = useRef(currentConv);
+  const isLoadingRef = useRef(false);
+  const loadedConvIdRef = useRef<number | null>(null);
 
+  // CRITICAL: Always keep ref in sync with state
   useEffect(() => {
     currentConvRef.current = currentConv;
   }, [currentConv]);
-
-  // Don't auto-manage sidebar - let user control it manually
 
   useEffect(() => {
     if (user) {
@@ -28,89 +29,146 @@ export default function ChatLayout() {
     }
   }, [user, loadConversations]);
 
+  // Load messages and members when conversation changes
+  useEffect(() => {
+    const convId = currentConv?.id;
+    
+    // Clear loaded ID when conversation changes
+    if (convId !== loadedConvIdRef.current) {
+      loadedConvIdRef.current = null;
+    }
+    
+    // If no conversation, clear everything
+    if (!convId) {
+      setMessages([]);
+      setMembers([]);
+      loadedConvIdRef.current = null;
+      return;
+    }
+    
+    // Skip if already loading or already loaded this exact conversation
+    if (isLoadingRef.current) {
+      return;
+    }
+    
+    isLoadingRef.current = true;
+    
+    const loadConversationData = async () => {
+      try {
+        // Double check we're still on the same conversation
+        if (currentConvRef.current?.id !== convId) {
+          return;
+        }
+        
+        // Load members and messages in parallel
+        await Promise.all([
+          loadMembers(convId),
+          loadMessages(convId)
+        ]);
+        
+        loadedConvIdRef.current = convId;
+      } catch (error) {
+        console.error("Error loading conversation data:", error);
+      } finally {
+        isLoadingRef.current = false;
+      }
+    };
+    
+    loadConversationData();
+  }, [currentConv?.id, loadMembers, loadMessages, setMessages, setMembers]);
+
+  // WebSocket handlers - use useCallback to keep them stable
+  const handleMemberAdded = useCallback((data: any) => {
+    // CRITICAL: Use ref to get current value
+    const currentId = currentConvRef.current?.id;
+    if (currentId === data.conversationId) {
+      loadMembers(data.conversationId);
+    }
+    loadConversations();
+  }, [loadMembers, loadConversations]);
+
+  const handleJoinedConversation = useCallback(() => {
+    loadConversations();
+  }, [loadConversations]);
+
+  const handleMemberLeft = useCallback((data: any) => {
+    const currentId = currentConvRef.current?.id;
+    if (currentId === data.conversationId) {
+      loadMembers(data.conversationId);
+    }
+    loadConversations();
+  }, [loadMembers, loadConversations]);
+
+  const handleMemberKicked = useCallback((data: any) => {
+    if (data.userId === user?.id) {
+      setCurrentConv(null);
+      setShowSidebar(true);
+      alert("You have been removed from the conversation");
+    } else {
+      const currentId = currentConvRef.current?.id;
+      if (currentId === data.conversationId) {
+        loadMembers(data.conversationId);
+      }
+    }
+    loadConversations();
+  }, [user?.id, setCurrentConv, setShowSidebar, loadMembers, loadConversations]);
+
+  const handleConversationDeleted = useCallback((data: any) => {
+    const currentId = currentConvRef.current?.id;
+    if (currentId === data.conversationId) {
+      setCurrentConv(null);
+      setShowSidebar(true);
+      alert("This conversation has been deleted");
+    }
+    loadConversations();
+  }, [setCurrentConv, setShowSidebar, loadConversations]);
+
+  const handleNewMessage = useCallback((data: any) => {
+    // CRITICAL: Always use fresh ref value
+    const currentId = currentConvRef.current?.id;
+    if (currentId === data.conversationId) {
+      setMessages((prevMessages: any[]) => {
+        const isDuplicate = prevMessages.some(m => m.id === data.message.id);
+        if (isDuplicate) return prevMessages;
+        return [...prevMessages, data.message];
+      });
+    }
+  }, [setMessages]);
+
+  const handleMessageDeleted = useCallback((data: any) => {
+    const currentId = currentConvRef.current?.id;
+    if (currentId === data.conversationId) {
+      setMessages((prevMessages: any[]) => 
+        prevMessages.filter(m => m.id !== data.messageId)
+      );
+    }
+  }, [setMessages]);
+
+  const handleReactionAdded = useCallback((data: any) => {
+    const currentId = currentConvRef.current?.id;
+    if (currentId === data.conversationId) {
+      loadMessages(data.conversationId);
+    }
+  }, [loadMessages]);
+
+  const handleReactionRemoved = useCallback((data: any) => {
+    const currentId = currentConvRef.current?.id;
+    if (currentId === data.conversationId) {
+      loadMessages(data.conversationId);
+    }
+  }, [loadMessages]);
+
+  const handleConversationCreated = useCallback(() => {
+    loadConversations();
+  }, [loadConversations]);
+
   useEffect(() => {
     if (!user) return;
 
     wsService.connect(user.id);
 
-    const handleConversationUpdated = () => {
-      loadConversations();
-    };
-
-    const handleMemberAdded = (data: any) => {
-      const currentId = currentConvRef.current?.id;
-      if (currentId === data.conversationId) {
-        loadMembers(data.conversationId);
-      }
-      loadConversations();
-    };
-
-    const handleJoinedConversation = () => {
-      loadConversations();
-    };
-
-    const handleMemberLeft = (data: any) => {
-      const currentId = currentConvRef.current?.id;
-      if (currentId === data.conversationId) {
-        loadMembers(data.conversationId);
-      }
-      loadConversations();
-    };
-
-    const handleMemberKicked = (data: any) => {
-      if (data.userId === user.id) {
-        setCurrentConv(null);
-        setShowSidebar(true);
-        alert("You have been removed from the conversation");
-      } else {
-        const currentId = currentConvRef.current?.id;
-        if (currentId === data.conversationId) {
-          loadMembers(data.conversationId);
-        }
-      }
-      loadConversations();
-    };
-
-    const handleConversationDeleted = (data: any) => {
-      const currentId = currentConvRef.current?.id;
-      if (currentId === data.conversationId) {
-        setCurrentConv(null);
-        setShowSidebar(true);
-        alert("This conversation has been deleted");
-      }
-      loadConversations();
-    };
-
-    const handleNewMessage = (data: any) => {
-      const currentId = currentConvRef.current?.id;
-      if (currentId === data.conversationId) {
-        setMessages((prevMessages: any[]) => [...prevMessages, data.message]);
-      }
-    };
-
-    const handleMessageDeleted = (data: any) => {
-      const currentId = currentConvRef.current?.id;
-      if (currentId === data.conversationId) {
-        loadMessages(data.conversationId);
-      }
-    };
-
-    const handleReactionAdded = (data: any) => {
-      const currentId = currentConvRef.current?.id;
-      if (currentId === data.conversationId) {
-        loadMessages(data.conversationId);
-      }
-    };
-
-    const handleReactionRemoved = (data: any) => {
-      const currentId = currentConvRef.current?.id;
-      if (currentId === data.conversationId) {
-        loadMessages(data.conversationId);
-      }
-    };
-
-    wsService.on("conversation_updated", handleConversationUpdated);
-    wsService.on("conversation_created", handleConversationUpdated);
+    // Subscribe to events
+    wsService.on("conversation_created", handleConversationCreated);
     wsService.on("member_added", handleMemberAdded);
     wsService.on("joined_conversation", handleJoinedConversation);
     wsService.on("member_left", handleMemberLeft);
@@ -122,8 +180,7 @@ export default function ChatLayout() {
     wsService.on("reaction_removed", handleReactionRemoved);
 
     return () => {
-      wsService.off("conversation_updated", handleConversationUpdated);
-      wsService.off("conversation_created", handleConversationUpdated);
+      wsService.off("conversation_created", handleConversationCreated);
       wsService.off("member_added", handleMemberAdded);
       wsService.off("joined_conversation", handleJoinedConversation);
       wsService.off("member_left", handleMemberLeft);
@@ -135,13 +192,19 @@ export default function ChatLayout() {
       wsService.off("reaction_removed", handleReactionRemoved);
       wsService.disconnect();
     };
-  }, [user]);
-
-  useEffect(() => {
-    if (currentConv) {
-      loadMembers(currentConv.id);
-    }
-  }, [currentConv, loadMembers]);
+  }, [
+    user,
+    handleConversationCreated,
+    handleMemberAdded,
+    handleJoinedConversation,
+    handleMemberLeft,
+    handleMemberKicked,
+    handleConversationDeleted,
+    handleNewMessage,
+    handleMessageDeleted,
+    handleReactionAdded,
+    handleReactionRemoved
+  ]);
 
   return (
     <div

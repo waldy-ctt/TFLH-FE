@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useAppContext } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
 import { UserPlus, Edit2, Users, ChevronLeft, MoreVertical } from "lucide-react";
@@ -12,6 +12,22 @@ export default function ChatHeader() {
   const [showSettings, setShowSettings] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Log for debugging
+  useEffect(() => {
+    console.log('ChatHeader: currentConv =', currentConv?.id, currentConv?.name);
+  }, [currentConv?.id, currentConv?.name]);
+
+  // Memoize conversation data to prevent flickering
+  const displayData = useMemo(() => {
+    if (!currentConv) return null;
+    
+    return {
+      id: currentConv.id,
+      name: currentConv.name,
+      memberCount: members.length || currentConv.member_count || 0
+    };
+  }, [currentConv?.id, currentConv?.name, members.length, currentConv?.member_count]);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -33,9 +49,12 @@ export default function ChatHeader() {
   }, [showMobileMenu]);
 
   const handleBackClick = () => {
+    console.log('ChatHeader: Back button clicked');
     setCurrentConv(null);
     setShowSidebar(true);
   };
+
+  if (!displayData) return null;
 
   return (
     <>
@@ -55,11 +74,11 @@ export default function ChatHeader() {
           
           <div className="flex-1 min-w-0">
             <h1 className="text-base sm:text-xl font-bold text-gray-900 truncate">
-              {currentConv?.name}
+              {displayData.name}
             </h1>
             <p className="text-xs text-gray-500 truncate">
               <Users size={12} className="inline mr-1" />
-              {members.length} member{members.length !== 1 ? "s" : ""}
+              {displayData.memberCount} member{displayData.memberCount !== 1 ? "s" : ""}
             </p>
           </div>
         </div>
