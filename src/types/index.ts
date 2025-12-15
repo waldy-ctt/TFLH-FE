@@ -1,12 +1,15 @@
+
 export interface User {
   id: number;
   username: string;
+  password?: string;
   created_at?: string;
 }
 
 export interface Conversation {
   id: number;
   name: string;
+  created_by: number;
   creator_name: string;
   member_count: number;
   created_at: string;
@@ -26,30 +29,42 @@ export interface Reaction {
 
 export interface Message {
   id: number;
-  username: string;
+  conversation_id: number;
   user_id: number | null;
+  username: string;
   content: string;
-  created_at: string;
   reply_to_id?: number;
   reply_to?: {
     id: number;
     content: string;
     username: string;
   };
-  reactions: Reaction[];
   is_system?: boolean;
+  reactions: Reaction[];
+  created_at: string;
 }
 
 export interface KickVote {
   id: number;
+  conversation_id: number;
+  target_user_id: number;
   voter_user_id: number;
   username: string;
   vote: boolean;
+  created_at: string;
 }
 
 export interface DeleteVote {
   id: number;
+  conversation_id: number;
   voter_user_id: number;
   username: string;
   vote: boolean;
+  created_at: string;
+}
+
+export interface ApiResponse<T = any> {
+  data?: T;
+  error?: string;
+  message?: string;
 }

@@ -1,144 +1,253 @@
-const API = "http://localhost:3000/api";
+const API_BASE_URL = "http://localhost:3000/api";
+
+/**
+ * Generic fetch wrapper with error handling
+ */
+async function fetchAPI(url: string, options?: RequestInit) {
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+      },
+    });
+    return await response.json();
+  } catch (error) {
+    console.error("API Error:", error);
+    throw error;
+  }
+}
 
 export const api = {
-  // Auth
+  // ============================================
+  // Auth APIs
+  // ============================================
+  
+  /**
+   * Create a new user account
+   */
   signup: async (username: string, password: string) => {
-    const res = await fetch(`${API}/signup`, {
+    return fetchAPI(`${API_BASE_URL}/signup`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password }),
     });
-    return res.json();
   },
 
+  /**
+   * Sign in with existing credentials
+   */
   signin: async (username: string, password: string) => {
-    const res = await fetch(`${API}/signin`, {
+    return fetchAPI(`${API_BASE_URL}/signin`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password }),
     });
-    return res.json();
   },
 
-  // Users
+  // ============================================
+  // User APIs
+  // ============================================
+
+  /**
+   * Get all users in the system
+   */
   getAllUsers: async () => {
-    const res = await fetch(`${API}/users`);
-    return res.json();
+    return fetchAPI(`${API_BASE_URL}/users`);
   },
 
+  /**
+   * Search users by username
+   */
   searchUsers: async (query: string) => {
-    const res = await fetch(`${API}/users/search?q=${query}`);
-    return res.json();
+    return fetchAPI(`${API_BASE_URL}/users/search?q=${encodeURIComponent(query)}`);
   },
 
-  // Conversations
+  // ============================================
+  // Conversation APIs
+  // ============================================
+
+  /**
+   * Get all conversations for a user
+   */
   getConversations: async (userId: number) => {
-    const res = await fetch(`${API}/conversations?user_id=${userId}`);
-    return res.json();
+    return fetchAPI(`${API_BASE_URL}/conversations?user_id=${userId}`);
   },
 
-  createConversation: async (name: string, createdBy: number, memberIds: number[]) => {
-    const res = await fetch(`${API}/conversations`, {
+  /**
+   * Create a new conversation
+   */
+  createConversation: async (
+    name: string,
+    createdBy: number,
+    memberIds: number[]
+  ) => {
+    return fetchAPI(`${API_BASE_URL}/conversations`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, created_by: createdBy, member_ids: memberIds }),
+      body: JSON.stringify({
+        name,
+        created_by: createdBy,
+        member_ids: memberIds,
+      }),
     });
-    return res.json();
   },
 
-  updateConversationName: async (convId: number, name: string, userId: number) => {
-    const res = await fetch(`${API}/conversations/${convId}`, {
+  /**
+   * Update conversation name
+   */
+  updateConversationName: async (
+    convId: number,
+    name: string,
+    userId: number
+  ) => {
+    return fetchAPI(`${API_BASE_URL}/conversations/${convId}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, user_id: userId }),
     });
-    return res.json();
   },
 
-  // Members
+  // ============================================
+  // Member APIs
+  // ============================================
+
+  /**
+   * Get all members in a conversation
+   */
   getMembers: async (convId: number) => {
-    const res = await fetch(`${API}/conversations/${convId}/members`);
-    return res.json();
+    return fetchAPI(`${API_BASE_URL}/conversations/${convId}/members`);
   },
 
-  addMember: async (convId: number, userId: number, addedById: number) => {
-    const res = await fetch(`${API}/conversations/${convId}/members`, {
+  /**
+   * Add a member to a conversation
+   */
+  addMember: async (convId: number, userId: number, addedById?: number) => {
+    return fetchAPI(`${API_BASE_URL}/conversations/${convId}/members`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: userId, added_by_id: addedById }),
+      body: JSON.stringify({
+        user_id: userId,
+        added_by_id: addedById,
+      }),
     });
-    return res.json();
   },
 
+  /**
+   * Leave a conversation
+   */
   leaveConversation: async (convId: number, userId: number) => {
-    const res = await fetch(`${API}/conversations/${convId}/leave`, {
+    return fetchAPI(`${API_BASE_URL}/conversations/${convId}/leave`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ user_id: userId }),
     });
-    return res.json();
   },
 
-  // Kick votes
-  voteKick: async (convId: number, targetUserId: number, voterUserId: number, vote: boolean) => {
-    const res = await fetch(`${API}/conversations/${convId}/kick`, {
+  // ============================================
+  // Vote APIs
+  // ============================================
+
+  /**
+   * Vote to kick a member from conversation
+   */
+  voteKick: async (
+    convId: number,
+    targetUserId: number,
+    voterUserId: number,
+    vote: boolean
+  ) => {
+    return fetchAPI(`${API_BASE_URL}/conversations/${convId}/kick`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ target_user_id: targetUserId, voter_user_id: voterUserId, vote }),
+      body: JSON.stringify({
+        target_user_id: targetUserId,
+        voter_user_id: voterUserId,
+        vote,
+      }),
     });
-    return res.json();
   },
 
+  /**
+   * Get kick vote status for a member
+   */
   getKickVotes: async (convId: number, targetUserId: number) => {
-    const res = await fetch(`${API}/conversations/${convId}/kick/${targetUserId}`);
-    return res.json();
+    return fetchAPI(
+      `${API_BASE_URL}/conversations/${convId}/kick/${targetUserId}`
+    );
   },
 
-  // Delete conversation votes
-  voteDeleteConversation: async (convId: number, voterUserId: number, vote: boolean) => {
-    const res = await fetch(`${API}/conversations/${convId}/delete-vote`, {
+  /**
+   * Vote to delete a conversation
+   */
+  voteDeleteConversation: async (
+    convId: number,
+    voterUserId: number,
+    vote: boolean
+  ) => {
+    return fetchAPI(`${API_BASE_URL}/conversations/${convId}/delete-vote`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ voter_user_id: voterUserId, vote }),
+      body: JSON.stringify({
+        voter_user_id: voterUserId,
+        vote,
+      }),
     });
-    return res.json();
   },
 
+  /**
+   * Get delete vote status for a conversation
+   */
   getDeleteVotes: async (convId: number) => {
-    const res = await fetch(`${API}/conversations/${convId}/delete-vote`);
-    return res.json();
+    return fetchAPI(`${API_BASE_URL}/conversations/${convId}/delete-vote`);
   },
 
-  // Messages
+  // ============================================
+  // Message APIs
+  // ============================================
+
+  /**
+   * Get all messages in a conversation
+   */
   getMessages: async (convId: number) => {
-    const res = await fetch(`${API}/conversations/${convId}/messages`);
-    return res.json();
+    return fetchAPI(`${API_BASE_URL}/conversations/${convId}/messages`);
   },
 
-  sendMessage: async (convId: number, userId: number, content: string, replyToId?: number) => {
-    const res = await fetch(`${API}/conversations/${convId}/messages`, {
+  /**
+   * Send a message to a conversation
+   */
+  sendMessage: async (
+    convId: number,
+    userId: number,
+    content: string,
+    replyToId?: number
+  ) => {
+    return fetchAPI(`${API_BASE_URL}/conversations/${convId}/messages`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: userId, content, reply_to_id: replyToId }),
+      body: JSON.stringify({
+        user_id: userId,
+        content,
+        reply_to_id: replyToId,
+      }),
     });
-    return res.json();
   },
 
+  /**
+   * Delete a message
+   */
   deleteMessage: async (msgId: number, userId: number) => {
-    const res = await fetch(`${API}/messages/${msgId}`, {
+    return fetchAPI(`${API_BASE_URL}/messages/${msgId}`, {
       method: "DELETE",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ user_id: userId }),
     });
-    return res.json();
   },
 
+  /**
+   * Add or remove a reaction to a message
+   */
   reactToMessage: async (msgId: number, userId: number, emoji: string) => {
-    const res = await fetch(`${API}/messages/${msgId}/react`, {
+    return fetchAPI(`${API_BASE_URL}/messages/${msgId}/react`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: userId, emoji }),
+      body: JSON.stringify({
+        user_id: userId,
+        emoji,
+      }),
     });
-    return res.json();
   },
 };
+
+// Export type for the API object
+export type API = typeof api;
