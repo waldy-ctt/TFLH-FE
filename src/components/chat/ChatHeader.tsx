@@ -12,7 +12,7 @@ export default function ChatHeader() {
 
   return (
     <>
-      <div className="bg-white border-b p-3 sm:p-4 flex justify-between items-center shadow-sm">
+      <div className="bg-white border-b p-3 sm:p-4 flex justify-between items-center shadow-sm sticky top-0 z-10">
         <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
           {isMobile && (
             <Button

@@ -6,9 +6,6 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   server: {
     androidScheme: 'https',
-    // For local development testing:
-    // url: 'http://192.168.1.XXX:5173',
-    // cleartext: true
   },
   plugins: {
     SplashScreen: {
@@ -16,6 +13,13 @@ const config: CapacitorConfig = {
       backgroundColor: "#4F46E5",
       showSpinner: false,
     },
+    StatusBar: {
+      style: 'dark',
+      backgroundColor: '#4F46E5',
+    },
+  },
+  android: {
+    allowMixedContent: true,
   },
 };
 

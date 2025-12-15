@@ -20,7 +20,7 @@ export default function MessageInput() {
   };
 
   return (
-    <div className="bg-white border-t p-3 sm:p-4">
+    <div className="bg-white border-t p-3 sm:p-4 sticky bottom-0 z-10">
       {replyTo && (
         <div className="max-w-4xl mx-auto mb-2 p-2 bg-blue-50 border-l-4 border-blue-500 rounded flex justify-between items-center">
           <div className="flex-1 min-w-0">
@@ -28,9 +28,7 @@ export default function MessageInput() {
               <Reply size={12} />
               Replying to {replyTo.username}
             </span>
-            <p className="text-sm text-gray-600 truncate">
-              {replyTo.content}
-            </p>
+            <p className="text-sm text-gray-600 truncate">{replyTo.content}</p>
           </div>
           <button
             onClick={() => setReplyTo(null)}
@@ -45,9 +43,7 @@ export default function MessageInput() {
           placeholder="Type a message..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) =>
-            e.key === "Enter" && !e.shiftKey && handleSend()
-          }
+          onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
           className="flex-1"
         />
         <Button

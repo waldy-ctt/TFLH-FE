@@ -13,9 +13,9 @@ export default function ChatLayout() {
   const { loadConversations } = useConversations();
   const { loadMembers } = useMembers();
   const { loadMessages } = useMessages();
-  
+
   const currentConvRef = useRef(currentConv);
-  
+
   useEffect(() => {
     currentConvRef.current = currentConv;
   }, [currentConv]);
@@ -140,7 +140,10 @@ export default function ChatLayout() {
   }, [currentConv, loadMembers]);
 
   return (
-    <div className="h-screen flex flex-col md:flex-row bg-gray-100 overflow-hidden">
+    <div
+      className="h-screen flex flex-col md:flex-row bg-gray-100 overflow-hidden"
+      style={{ paddingTop: "env(safe-area-inset-top)" }}
+    >
       <Sidebar />
       <ChatArea />
     </div>
