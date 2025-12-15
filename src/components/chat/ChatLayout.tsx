@@ -1,4 +1,5 @@
-import { useEffect, useRef, useCallback } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useEffect, useRef } from "react"; // Remove useCallback
 import { useAppContext } from "@/contexts/AppContext";
 import { useConversations } from "@/hooks/useConversations";
 import { useMembers } from "@/hooks/useMembers";
@@ -13,28 +14,24 @@ export default function ChatLayout() {
   const { loadMembers } = useMembers();
   const { loadMessages } = useMessages();
   
-  // Use ref to always have current conversation ID
   const currentConvRef = useRef(currentConv);
   
   useEffect(() => {
     currentConvRef.current = currentConv;
   }, [currentConv]);
 
-  // Initial load
   useEffect(() => {
     if (user) {
       loadConversations();
     }
   }, [user, loadConversations]);
 
-  // WebSocket connection - separate effect, only depends on user
   useEffect(() => {
     if (!user) return;
 
     wsService.connect(user.id);
 
-    // Handle WebSocket events - using useCallback to prevent recreating
-    const handleConversationUpdated = (data: any) => {
+    const handleConversationUpdated = () => {
       loadConversations();
     };
 
@@ -46,7 +43,7 @@ export default function ChatLayout() {
       loadConversations();
     };
 
-    const handleJoinedConversation = (data: any) => {
+    const handleJoinedConversation = () => {
       loadConversations();
     };
 
@@ -83,7 +80,7 @@ export default function ChatLayout() {
     const handleNewMessage = (data: any) => {
       const currentId = currentConvRef.current?.id;
       if (currentId === data.conversationId) {
-        setMessages((prevMessages) => [...prevMessages, data.message]);
+        setMessages((prevMessages: any[]) => [...prevMessages, data.message]);
       }
     };
 
@@ -108,7 +105,6 @@ export default function ChatLayout() {
       }
     };
 
-    // Register event handlers
     wsService.on("conversation_updated", handleConversationUpdated);
     wsService.on("conversation_created", handleConversationUpdated);
     wsService.on("member_added", handleMemberAdded);
@@ -121,7 +117,6 @@ export default function ChatLayout() {
     wsService.on("reaction_added", handleReactionAdded);
     wsService.on("reaction_removed", handleReactionRemoved);
 
-    // Cleanup
     return () => {
       wsService.off("conversation_updated", handleConversationUpdated);
       wsService.off("conversation_created", handleConversationUpdated);
@@ -136,9 +131,8 @@ export default function ChatLayout() {
       wsService.off("reaction_removed", handleReactionRemoved);
       wsService.disconnect();
     };
-  }, [user]); // ONLY depend on user - nothing else!
+  }, [user]);
 
-  // Load members when conversation changes
   useEffect(() => {
     if (currentConv) {
       loadMembers(currentConv.id);

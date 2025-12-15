@@ -1,5 +1,8 @@
 type EventHandler = (data: any) => void;
 
+// const WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:3000/ws";
+const WS_URL = "wss://yaca-chat.duckdns.org/ws";
+
 class WebSocketService {
   private ws: WebSocket | null = null;
   private userId: number | null = null;
@@ -15,9 +18,10 @@ class WebSocketService {
     }
 
     this.userId = userId;
-    this.ws = new WebSocket(`ws://localhost:3000/ws?user_id=${userId}`);
+    this.ws = new WebSocket(`${WS_URL}?user_id=${userId}`);
 
     this.ws.onopen = () => {
+      console.log("WebSocket connected");
       this.reconnectAttempts = 0;
       
       // Start ping interval to keep connection alive
@@ -54,6 +58,7 @@ class WebSocketService {
     };
 
     this.ws.onclose = () => {
+      console.log("WebSocket disconnected");
       this.cleanup();
       this.attemptReconnect();
     };
@@ -100,6 +105,7 @@ class WebSocketService {
 
   private attemptReconnect() {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      console.error("Max reconnection attempts reached");
       return;
     }
 
@@ -109,6 +115,8 @@ class WebSocketService {
 
     this.reconnectAttempts++;
     const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
+    
+    console.log(`Attempting to reconnect in ${delay}ms...`);
     
     this.reconnectTimeout = setTimeout(() => {
       if (this.userId) {

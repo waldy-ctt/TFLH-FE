@@ -4,7 +4,7 @@ import { useConversations } from "@/hooks/useConversations";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { LogOut, Plus, Users, XIcon, Menu } from "lucide-react";
+import { LogOut, Plus, Users, XIcon } from "lucide-react"; // Remove Menu
 import NewConversationModal from "@/components/modals/NewConversationModal";
 
 export default function Sidebar() {
@@ -91,7 +91,6 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Mobile overlay */}
       {isMobile && showSidebar && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40"

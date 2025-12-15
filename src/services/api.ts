@@ -1,8 +1,6 @@
-const API_BASE_URL = "http://localhost:3000/api";
+// const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+const API_BASE_URL = "https://yaca-chat.duckdns.org/api";
 
-/**
- * Generic fetch wrapper with error handling
- */
 async function fetchAPI(url: string, options?: RequestInit) {
   try {
     const response = await fetch(url, {
@@ -20,13 +18,7 @@ async function fetchAPI(url: string, options?: RequestInit) {
 }
 
 export const api = {
-  // ============================================
   // Auth APIs
-  // ============================================
-  
-  /**
-   * Create a new user account
-   */
   signup: async (username: string, password: string) => {
     return fetchAPI(`${API_BASE_URL}/signup`, {
       method: "POST",
@@ -34,9 +26,6 @@ export const api = {
     });
   },
 
-  /**
-   * Sign in with existing credentials
-   */
   signin: async (username: string, password: string) => {
     return fetchAPI(`${API_BASE_URL}/signin`, {
       method: "POST",
@@ -44,38 +33,20 @@ export const api = {
     });
   },
 
-  // ============================================
-  // User APIs
-  // ============================================
-
-  /**
-   * Get all users in the system
-   */
+  // ... rest of your API methods (keep them the same, just use API_BASE_URL)
+  
   getAllUsers: async () => {
     return fetchAPI(`${API_BASE_URL}/users`);
   },
 
-  /**
-   * Search users by username
-   */
   searchUsers: async (query: string) => {
     return fetchAPI(`${API_BASE_URL}/users/search?q=${encodeURIComponent(query)}`);
   },
 
-  // ============================================
-  // Conversation APIs
-  // ============================================
-
-  /**
-   * Get all conversations for a user
-   */
   getConversations: async (userId: number) => {
     return fetchAPI(`${API_BASE_URL}/conversations?user_id=${userId}`);
   },
 
-  /**
-   * Create a new conversation
-   */
   createConversation: async (
     name: string,
     createdBy: number,
@@ -91,9 +62,6 @@ export const api = {
     });
   },
 
-  /**
-   * Update conversation name
-   */
   updateConversationName: async (
     convId: number,
     name: string,
@@ -105,20 +73,10 @@ export const api = {
     });
   },
 
-  // ============================================
-  // Member APIs
-  // ============================================
-
-  /**
-   * Get all members in a conversation
-   */
   getMembers: async (convId: number) => {
     return fetchAPI(`${API_BASE_URL}/conversations/${convId}/members`);
   },
 
-  /**
-   * Add a member to a conversation
-   */
   addMember: async (convId: number, userId: number, addedById?: number) => {
     return fetchAPI(`${API_BASE_URL}/conversations/${convId}/members`, {
       method: "POST",
@@ -129,9 +87,6 @@ export const api = {
     });
   },
 
-  /**
-   * Leave a conversation
-   */
   leaveConversation: async (convId: number, userId: number) => {
     return fetchAPI(`${API_BASE_URL}/conversations/${convId}/leave`, {
       method: "POST",
@@ -139,13 +94,6 @@ export const api = {
     });
   },
 
-  // ============================================
-  // Vote APIs
-  // ============================================
-
-  /**
-   * Vote to kick a member from conversation
-   */
   voteKick: async (
     convId: number,
     targetUserId: number,
@@ -162,18 +110,12 @@ export const api = {
     });
   },
 
-  /**
-   * Get kick vote status for a member
-   */
   getKickVotes: async (convId: number, targetUserId: number) => {
     return fetchAPI(
       `${API_BASE_URL}/conversations/${convId}/kick/${targetUserId}`
     );
   },
 
-  /**
-   * Vote to delete a conversation
-   */
   voteDeleteConversation: async (
     convId: number,
     voterUserId: number,
@@ -188,27 +130,14 @@ export const api = {
     });
   },
 
-  /**
-   * Get delete vote status for a conversation
-   */
   getDeleteVotes: async (convId: number) => {
     return fetchAPI(`${API_BASE_URL}/conversations/${convId}/delete-vote`);
   },
 
-  // ============================================
-  // Message APIs
-  // ============================================
-
-  /**
-   * Get all messages in a conversation
-   */
   getMessages: async (convId: number) => {
     return fetchAPI(`${API_BASE_URL}/conversations/${convId}/messages`);
   },
 
-  /**
-   * Send a message to a conversation
-   */
   sendMessage: async (
     convId: number,
     userId: number,
@@ -225,9 +154,6 @@ export const api = {
     });
   },
 
-  /**
-   * Delete a message
-   */
   deleteMessage: async (msgId: number, userId: number) => {
     return fetchAPI(`${API_BASE_URL}/messages/${msgId}`, {
       method: "DELETE",
@@ -235,9 +161,6 @@ export const api = {
     });
   },
 
-  /**
-   * Add or remove a reaction to a message
-   */
   reactToMessage: async (msgId: number, userId: number, emoji: string) => {
     return fetchAPI(`${API_BASE_URL}/messages/${msgId}/react`, {
       method: "POST",
@@ -249,5 +172,4 @@ export const api = {
   },
 };
 
-// Export type for the API object
 export type API = typeof api;

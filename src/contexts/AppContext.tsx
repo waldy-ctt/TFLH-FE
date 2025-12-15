@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode, Dispatch, SetStateAction } from "react";
 import { User, Conversation, Member, Message } from "@/types";
 import { authStorage } from "@/utils/auth";
 
@@ -10,7 +10,7 @@ interface AppContextType {
   currentConv: Conversation | null;
   setCurrentConv: (conv: Conversation | null) => void;
   messages: Message[];
-  setMessages: (msgs: Message[]) => void;
+  setMessages: Dispatch<SetStateAction<Message[]>>; 
   members: Member[];
   setMembers: (members: Member[]) => void;
   showSidebar: boolean;
