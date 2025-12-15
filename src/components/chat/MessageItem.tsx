@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useAppContext } from "@/contexts/AppContext";
 import { useMessages } from "@/hooks/useMessages";
 import { Message } from "@/types";
-import { Smile, Reply, Trash2, X as XIcon } from "lucide-react";
+import { Reply, Trash2 } from "lucide-react";
 
 const EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🎉"];
 
@@ -11,12 +11,45 @@ interface MessageItemProps {
   index: number;
 }
 
-export default function MessageItem({ message, index }: MessageItemProps) {
+export default function MessageItem({ message }: MessageItemProps) {
   const { user } = useAppContext();
   const { deleteMessage, reactToMessage } = useMessages();
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showActions, setShowActions] = useState(false);
+
+  console.log(showEmojiPicker);
 
   const isOwnMessage = message.user_id === user?.id;
+
+  const handleLongPress = () => {
+    if (!message.is_system) {
+      setShowActions(true);
+    }
+  };
+
+  const handleReaction = async (emoji: string) => {
+    await reactToMessage(message.id, emoji);
+    setShowEmojiPicker(false);
+    setShowActions(false);
+  };
+
+  const handleDelete = async () => {
+    if (window.confirm("Delete this message?")) {
+      await deleteMessage(message.id);
+    }
+    setShowActions(false);
+  };
+
+  // System message
+  if (message.is_system) {
+    return (
+      <div className="flex justify-center my-2">
+        <div className="bg-gray-200 text-gray-600 text-xs px-3 py-1.5 rounded-full max-w-[80%] text-center">
+          {message.content}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="group">
@@ -41,23 +74,32 @@ export default function MessageItem({ message, index }: MessageItemProps) {
       )}
 
       {/* Message */}
-      <div
-        className={`flex ${
-          isOwnMessage ? "justify-end" : "justify-start"
-        }`}
-      >
+      <div className={`flex ${isOwnMessage ? "justify-end" : "justify-start"}`}>
         <div className="relative max-w-[85%] sm:max-w-xs">
           <div
-            className={`px-3 sm:px-4 py-2 rounded-2xl shadow-md ${
+            className={`px-4 py-2.5 rounded-2xl shadow-md active:scale-98 transition-transform touch-manipulation ${
               isOwnMessage
                 ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-br-none"
                 : "bg-white text-gray-900 rounded-bl-none"
             }`}
+            onTouchStart={(e) => {
+              const timer = setTimeout(handleLongPress, 500);
+              (e.currentTarget as any)._longPressTimer = timer;
+            }}
+            onTouchEnd={(e) => {
+              clearTimeout((e.currentTarget as any)._longPressTimer);
+            }}
+            onTouchMove={(e) => {
+              clearTimeout((e.currentTarget as any)._longPressTimer);
+            }}
+            style={{
+              WebkitTapHighlightColor: "transparent",
+            }}
           >
             <p className="text-xs opacity-70 mb-1 font-medium">
               {message.username}
             </p>
-            <p className="break-words text-sm sm:text-base">
+            <p className="break-words text-base leading-relaxed">
               {message.content}
             </p>
 
@@ -69,80 +111,117 @@ export default function MessageItem({ message, index }: MessageItemProps) {
                     acc[r.emoji] = acc[r.emoji] || [];
                     acc[r.emoji].push(r.username);
                     return acc;
-                  }, {})
+                  }, {}),
                 ).map(([emoji, users]) => (
-                  <span
+                  <button
                     key={emoji}
-                    className={`text-xs px-2 py-1 rounded-full ${
+                    onClick={() => handleReaction(emoji)}
+                    className={`text-sm px-2 py-1 rounded-full active:scale-95 transition-transform ${
                       isOwnMessage ? "bg-white/20" : "bg-gray-100"
                     }`}
                     title={(users as string[]).join(", ")}
+                    type="button"
+                    style={{
+                      WebkitTapHighlightColor: "transparent",
+                    }}
                   >
                     {emoji} {(users as string[]).length}
-                  </span>
+                  </button>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Message Actions */}
-          {(index > 0 || isOwnMessage) && (
-            <div
-              className={`absolute ${
-                isOwnMessage ? "left-0 -translate-x-full" : "right-0 translate-x-full"
-              } top-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-white rounded-lg shadow-lg p-1 border border-gray-200 z-10 ml-2 mr-2`}
-            >
-              <button
-                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                className="p-1.5 hover:bg-gray-100 rounded text-gray-700"
-                title="React"
-              >
-                <Smile size={16} />
-              </button>
-              <button
-                onClick={() => {/* setReplyTo(message) - need to pass this from parent */}}
-                className="p-1.5 hover:bg-gray-100 rounded text-gray-700"
-                title="Reply"
-              >
-                <Reply size={16} />
-              </button>
-              {isOwnMessage && (
-                <button
-                  onClick={() => deleteMessage(message.id)}
-                  className="p-1.5 hover:bg-red-100 text-red-600 rounded"
-                  title="Delete"
-                >
-                  <Trash2 size={16} />
-                </button>
-              )}
-            </div>
-          )}
+          {/* Message Actions Menu (Android optimized) */}
+          {showActions && (
+            <>
+              {/* Backdrop */}
+              <div
+                className="fixed inset-0 z-40"
+                onClick={() => setShowActions(false)}
+                onTouchEnd={() => setShowActions(false)}
+                style={{
+                  WebkitTapHighlightColor: "transparent",
+                }}
+              />
 
-          {/* Emoji Picker */}
-          {showEmojiPicker && (
-            <div className="absolute -top-16 left-0 bg-white rounded-lg shadow-xl p-2 flex gap-1 z-20 border border-gray-200">
-              {EMOJIS.map((emoji) => (
-                <button
-                  key={emoji}
-                  onClick={() => {
-                    reactToMessage(message.id, emoji);
-                    setShowEmojiPicker(false);
-                  }}
-                  className="text-xl hover:scale-125 transition-transform p-1"
-                >
-                  {emoji}
-                </button>
-              ))}
-              <button
-                onClick={() => setShowEmojiPicker(false)}
-                className="ml-2 text-gray-500 hover:text-gray-700"
-              >
-                <XIcon size={16} />
-              </button>
-            </div>
+              {/* Actions Menu */}
+              <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-2xl p-4 z-50 animate-slide-up">
+                <div className="flex justify-center mb-2">
+                  <div className="w-12 h-1 bg-gray-300 rounded-full" />
+                </div>
+
+                {/* Emoji Picker */}
+                <div className="mb-4">
+                  <p className="text-xs text-gray-500 mb-2">React</p>
+                  <div className="flex gap-2 justify-around">
+                    {EMOJIS.map((emoji) => (
+                      <button
+                        key={emoji}
+                        onClick={() => handleReaction(emoji)}
+                        className="text-3xl p-2 active:scale-110 transition-transform"
+                        type="button"
+                        style={{
+                          WebkitTapHighlightColor: "transparent",
+                        }}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="space-y-2">
+                  {isOwnMessage && (
+                    <button
+                      onClick={handleDelete}
+                      className="w-full p-4 text-red-600 font-medium rounded-lg active:bg-red-50 transition-colors flex items-center justify-center gap-2"
+                      type="button"
+                      style={{
+                        WebkitTapHighlightColor: "transparent",
+                      }}
+                    >
+                      <Trash2 size={18} />
+                      Delete Message
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setShowActions(false)}
+                    className="w-full p-4 text-gray-700 font-medium rounded-lg active:bg-gray-100 transition-colors"
+                    type="button"
+                    style={{
+                      WebkitTapHighlightColor: "transparent",
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </>
           )}
         </div>
       </div>
     </div>
   );
+}
+
+/* Add to your CSS */
+const style = document.createElement("style");
+style.textContent = `
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+`;
+if (typeof document !== "undefined") {
+  document.head.appendChild(style);
 }

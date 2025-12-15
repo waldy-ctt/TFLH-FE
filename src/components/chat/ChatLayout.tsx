@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useRef } from "react"; // Remove useCallback
+import { useEffect, useRef } from "react";
 import { useAppContext } from "@/contexts/AppContext";
 import { useConversations } from "@/hooks/useConversations";
 import { useMembers } from "@/hooks/useMembers";
@@ -9,7 +9,7 @@ import Sidebar from "./Sidebar";
 import ChatArea from "./ChatArea";
 
 export default function ChatLayout() {
-  const { user, currentConv, setCurrentConv, setMessages } = useAppContext();
+  const { user, currentConv, setCurrentConv, setMessages, isMobile, setShowSidebar } = useAppContext();
   const { loadConversations } = useConversations();
   const { loadMembers } = useMembers();
   const { loadMessages } = useMessages();
@@ -19,6 +19,13 @@ export default function ChatLayout() {
   useEffect(() => {
     currentConvRef.current = currentConv;
   }, [currentConv]);
+
+  // Show sidebar when no conversation is selected on mobile
+  useEffect(() => {
+    if (isMobile && !currentConv) {
+      setShowSidebar(true);
+    }
+  }, [isMobile, currentConv, setShowSidebar]);
 
   useEffect(() => {
     if (user) {
@@ -58,6 +65,7 @@ export default function ChatLayout() {
     const handleMemberKicked = (data: any) => {
       if (data.userId === user.id) {
         setCurrentConv(null);
+        setShowSidebar(true);
         alert("You have been removed from the conversation");
       } else {
         const currentId = currentConvRef.current?.id;
@@ -72,6 +80,7 @@ export default function ChatLayout() {
       const currentId = currentConvRef.current?.id;
       if (currentId === data.conversationId) {
         setCurrentConv(null);
+        setShowSidebar(true);
         alert("This conversation has been deleted");
       }
       loadConversations();
@@ -141,8 +150,11 @@ export default function ChatLayout() {
 
   return (
     <div
-      className="h-screen flex flex-col md:flex-row bg-gray-100 overflow-hidden"
-      style={{ paddingTop: "env(safe-area-inset-top)" }}
+      className="h-screen flex flex-col md:flex-row bg-gray-100 overflow-hidden touch-manipulation"
+      style={{ 
+        paddingTop: "env(safe-area-inset-top)",
+        paddingBottom: "env(safe-area-inset-bottom)"
+      }}
     >
       <Sidebar />
       <ChatArea />

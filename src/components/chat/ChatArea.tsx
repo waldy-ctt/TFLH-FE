@@ -2,29 +2,23 @@ import { useAppContext } from "@/contexts/AppContext";
 import ChatHeader from "./ChatHeader";
 import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
-import { Button } from "@/components/ui/button";
-import { Menu } from "lucide-react";
 
 export default function ChatArea() {
-  const { currentConv, setShowSidebar, isMobile } = useAppContext();
+  const { currentConv, isMobile } = useAppContext();
 
   if (!currentConv) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-gray-400 p-4">
-        {isMobile && (
-          <Button
-            variant="outline"
-            onClick={() => setShowSidebar(true)}
-            className="mb-4"
-          >
-            <Menu size={18} className="mr-2" />
-            Show Conversations
-          </Button>
-        )}
-        <div className="text-center">
-          <div className="text-5xl sm:text-6xl mb-4">💬</div>
-          <p className="text-lg sm:text-xl">
-            Select a conversation to start chatting
+      <div className="flex-1 flex flex-col items-center justify-center text-gray-400 p-4 bg-gray-50">
+        <div className="text-center max-w-sm">
+          <div className="text-6xl mb-4">💬</div>
+          <p className="text-xl font-medium text-gray-600 mb-2">
+            {isMobile ? "Select a conversation" : "Welcome to TFLH Chat"}
+          </p>
+          <p className="text-sm text-gray-500">
+            {isMobile 
+              ? "Choose from the menu to start chatting"
+              : "Select a conversation from the sidebar or create a new one to get started"
+            }
           </p>
         </div>
       </div>
@@ -32,7 +26,7 @@ export default function ChatArea() {
   }
 
   return (
-    <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+    <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-white">
       <ChatHeader />
       <MessageList />
       <MessageInput />
